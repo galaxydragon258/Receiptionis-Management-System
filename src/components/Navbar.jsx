@@ -35,7 +35,6 @@ export default function Navbar() {
                             width: isMobile ? 34 : 40,
                             height: isMobile ? 34 : 40,
                             borderRadius: isMobile ? 10 : 12,
-                            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
