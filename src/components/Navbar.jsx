@@ -35,21 +35,24 @@ export default function Navbar() {
                             width: isMobile ? 34 : 40,
                             height: isMobile ? 34 : 40,
                             borderRadius: isMobile ? 10 : 12,
-                            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             boxShadow: '0 4px 14px rgba(99,102,241,0.25)',
                             flexShrink: 0,
+                        
                         }}
                     >
                         {/* dumbbell icon */}
-                        <svg width={isMobile ? 18 : 22} height={isMobile ? 18 : 22} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M6.5 6.5h11M6.5 17.5h11" />
-                            <rect x="2" y="4" width="4" height="16" rx="1.5" fill="rgba(255,255,255,0.2)" stroke="white" />
-                            <rect x="18" y="4" width="4" height="16" rx="1.5" fill="rgba(255,255,255,0.2)" stroke="white" />
-                            <line x1="12" y1="6.5" x2="12" y2="17.5" />
-                        </svg>
+                        <img src='/Logo.jpg'
+                        style={{
+                            width:'100%',
+                            height:'100%',
+                            objectFit:'cover',
+                            borderRadius:'12px'
+                        }}
+                        />
+                        
                     </div>
                     <div>
                         <h1 style={{ fontSize: isMobile ? '0.88rem' : '1.05rem', fontWeight: 800, letterSpacing: '-0.02em', color: '#1e293b', lineHeight: 1.2 }}>
