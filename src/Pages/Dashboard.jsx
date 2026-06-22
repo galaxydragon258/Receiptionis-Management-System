@@ -203,10 +203,11 @@ function MonthlyChart({ data }) {
     );
 }
 
-/* ═══════════════════════════════════════════
-   MAIN DASHBOARD
-   ═══════════════════════════════════════════ */
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
+    (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+        ? 'http://localhost:5000/api'
+        : 'https://receiptionis-management-system-kydk.vercel.app/api');
 
 export default function Dashboard() {
     const [now, setNow] = useState(new Date());
@@ -254,6 +255,7 @@ export default function Dashboard() {
                 }
             } catch (err) {
                 console.error('Error loading data:', err);
+                console.log(err)
                 if (isMounted) {
                     setError('Unable to load database records. Please verify that your Backend server is running and database configurations in .env are correct.');
                     setLoading(false);
