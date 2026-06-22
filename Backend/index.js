@@ -96,12 +96,12 @@ const formatTime = (date) => {
 
 // Routes
 // 1. Health check
-app.get('/api/health', (req, res) => {
+app.get('https://receiptionis-management-system-kydk.vercel.app/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date() });
 });
 
 // 2. Fetch daily receptionist records
-app.get('/api/records', async (req, res) => {
+app.get('https://receiptionis-management-system-kydk.vercel.app/api/records', async (req, res) => {
     try {
         const records = await ReyesGymRecords.find().sort({ createdAt: 1 });
         res.json(records);
@@ -112,7 +112,7 @@ app.get('/api/records', async (req, res) => {
 });
 
 // 3. Add a new record
-app.post('/api/records', async (req, res) => {
+app.post('https://receiptionis-management-system-kydk.vercel.app/api/records', async (req, res) => {
     const { member, type, amount, time } = req.body;
 
     // Simple validation
@@ -138,7 +138,7 @@ app.post('/api/records', async (req, res) => {
 });
 
 // 4. Fetch monthly stats
-app.get('/api/monthly-data', async (req, res) => {
+app.get('https://receiptionis-management-system-kydk.vercel.app/api/monthly-data', async (req, res) => {
     const data = await getMonthlyData();
     res.json(data);
 });
