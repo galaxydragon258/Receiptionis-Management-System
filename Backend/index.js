@@ -5,29 +5,54 @@ const mongoose = require('mongoose');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const MONGODB_URI = process.env.MONGODB_URI;
+const MONGODB_URI = process.env.MONGODB_URI || '';
 
 // Enable CORS for frontend integration
 app.use(cors());
 app.use(express.json());
 
-// Database Connection
+// Database Connection Manager (with caching for Serverless environments)
+let cachedConnection = null;
 const isPlaceholderUri = MONGODB_URI ? (MONGODB_URI.includes('<username>') || MONGODB_URI.includes('<password>')) : true;
 
-if (!MONGODB_URI || isPlaceholderUri) {
-    console.warn('\n⚠️  [GymFlow Database Warning] MONGODB_URI is not set or contains placeholders (<username>/<password>).');
-    console.warn('⚠️  Please configure your database connection inside Backend/.env to connect to MongoDB Atlas.');
-    console.warn('⚠️  Attempting to connect to local MongoDB database fallback if available...\n');
+async function connectToDatabase() {
+    if (cachedConnection) {
+        return cachedConnection;
+    }
+
+    if (!MONGODB_URI || isPlaceholderUri) {
+        console.warn('\n⚠️  [GymFlow Database Warning] MONGODB_URI is not set or contains placeholders (<username>/<password>).');
+        console.warn('⚠️  Please configure your database connection inside Backend/.env or Vercel Environment Variables.');
+        console.warn('⚠️  Attempting to connect to local MongoDB database fallback if available...\n');
+        cachedConnection = await mongoose.connect('mongodb://localhost:27017/gymflow');
+        return cachedConnection;
+    }
+
+    try {
+        cachedConnection = await mongoose.connect(MONGODB_URI);
+        console.log('✅ Connected to MongoDB database successfully.');
+        return cachedConnection;
+    } catch (err) {
+        console.error('❌ Failed to connect to MongoDB:', err.message);
+        throw err;
+    }
 }
 
-mongoose.connect((!MONGODB_URI || isPlaceholderUri) ? 'mongodb://localhost:27017/gymflow' : MONGODB_URI)
-    .then(() => {
-        console.log('✅ Connected to MongoDB database successfully.');
-    })
-    .catch((err) => {
-        console.error('❌ Failed to connect to MongoDB:', err.message);
-        console.error('💡 Please verify your MongoDB connection string in Backend/.env');
-    });
+// Proactively connect on startup (will fail silently or print log if offline/unconfigured)
+connectToDatabase().catch(err => {
+    console.error('❌ Initial MongoDB startup connection failed:', err.message);
+});
+
+// Middleware to ensure DB is connected before handling any requests
+app.use(async (req, res, next) => {
+    try {
+        await connectToDatabase();
+        next();
+    } catch (err) {
+        console.error('Database connection middleware error:', err);
+        res.status(500).json({ error: 'Database connection failed: ' + err.message });
+    }
+});
 
 // Record Schema & Model Definition
 const recordSchema = new mongoose.Schema({
@@ -48,34 +73,38 @@ recordSchema.virtual('id').get(function () {
 
 const ReyesGymRecords = mongoose.model('Record', recordSchema);
 
+// Aggregate daily records into monthly breakdown stats
 const getMonthlyData = async () => {
-    const data = await ReyesGymRecords.aggregate([
-        {
-            $group: {
-                _id: {
-                    day: { $dayOfMonth: "$createdAt" }
-                },
-                sales: { $sum: "$amount" },
-                members: { $sum: 1 }
+    try {
+        const data = await ReyesGymRecords.aggregate([
+            {
+                $group: {
+                    _id: {
+                        day: { $dayOfMonth: "$createdAt" }
+                    },
+                    sales: { $sum: "$amount" },
+                    members: { $sum: 1 }
+                }
+            },
+            {
+                $sort: { "_id.day": 1 }
+            },
+            {
+                $project: {
+                    _id: 0,
+                    day: "$_id.day",
+                    sales: 1,
+                    members: 1
+                }
             }
-        },
-        {
-            $sort: { "_id.day": 1 }
-        },
-        {
-            $project: {
-                _id: 0,
-                day: "$_id.day",
-                sales: 1,
-                members: 1
-            }
-        }
-    ]);
-    console.log(data)
-    return data
+        ]);
+        return data;
+    } catch (err) {
+        console.error('Error calculating monthly stats:', err);
+        return [];
+    }
 };
 
-getMonthlyData();
 // Helper functions
 const formatDate = (date) => {
     return date.toLocaleDateString('en-US', {
@@ -92,16 +121,16 @@ const formatTime = (date) => {
         minute: '2-digit',
         hour12: true,
     });
-}
+};
 
 // Routes
 // 1. Health check
-app.get('https://receiptionis-management-system-kydk.vercel.app/api/health', (req, res) => {
+app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date() });
 });
 
 // 2. Fetch daily receptionist records
-app.get('https://receiptionis-management-system-kydk.vercel.app/api/records', async (req, res) => {
+app.get('/api/records', async (req, res) => {
     try {
         const records = await ReyesGymRecords.find().sort({ createdAt: 1 });
         res.json(records);
@@ -112,7 +141,7 @@ app.get('https://receiptionis-management-system-kydk.vercel.app/api/records', as
 });
 
 // 3. Add a new record
-app.post('https://receiptionis-management-system-kydk.vercel.app/api/records', async (req, res) => {
+app.post('/api/records', async (req, res) => {
     const { member, type, amount, time } = req.body;
 
     // Simple validation
@@ -138,12 +167,16 @@ app.post('https://receiptionis-management-system-kydk.vercel.app/api/records', a
 });
 
 // 4. Fetch monthly stats
-app.get('https://receiptionis-management-system-kydk.vercel.app/api/monthly-data', async (req, res) => {
+app.get('/api/monthly-data', async (req, res) => {
     const data = await getMonthlyData();
     res.json(data);
 });
 
-// Start server
-app.listen(PORT, () => {
-    console.log(`[GymFlow Test Backend] Running on http://localhost:${PORT}`);
-});
+// Start server locally (if not running in Serverless environment like Vercel)
+if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+    app.listen(PORT, () => {
+        console.log(`[GymFlow Test Backend] Running on http://localhost:${PORT}`);
+    });
+}
+
+module.exports = app;
