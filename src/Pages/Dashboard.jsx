@@ -755,7 +755,6 @@ export default function Dashboard() {
                         fontWeight: 500,
                     }}
                 >
-                    GymFlow Receptionist System &copy; {today.getFullYear()}
                 </div>
             </main>
 
