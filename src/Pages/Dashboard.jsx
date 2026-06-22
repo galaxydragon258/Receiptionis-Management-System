@@ -206,6 +206,8 @@ function MonthlyChart({ data }) {
 /* ═══════════════════════════════════════════
    MAIN DASHBOARD
    ═══════════════════════════════════════════ */
+const API_BASE_URL = 'http://localhost:5000/api';
+
 export default function Dashboard() {
     const [now, setNow] = useState(new Date());
     const today = useMemo(() => new Date(), []);
@@ -220,14 +222,69 @@ export default function Dashboard() {
         return () => clearInterval(id);
     }, []);
 
-    const [dailyRecords, setDailyRecords] = useState(() => generateDailyRecords(today));
-    const monthlyData = useMemo(() => generateMonthlyBreakdown(), []);
+    const [dailyRecords, setDailyRecords] = useState([]);
+    const [monthlyData, setMonthlyData] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-    const handleAddRecord = useCallback((record) => {
-        setDailyRecords(prev => [
-            ...prev,
-            { ...record, id: prev.length + 1 },
-        ]);
+    // Fetch data from MongoDB
+    useEffect(() => {
+        let isMounted = true;
+        async function fetchData() {
+            setLoading(true);
+            setError(null);
+            try {
+                const [recordsRes, monthlyRes] = await Promise.all([
+                    fetch(`${API_BASE_URL}/records`),
+                    fetch(`${API_BASE_URL}/monthly-data`)
+                ]);
+                if (!recordsRes.ok) {
+                    throw new Error('Failed to fetch records from database server');
+                }
+                if (!monthlyRes.ok) {
+                    throw new Error('Failed to fetch monthly breakdown stats');
+                }
+                const recordsData = await recordsRes.json();
+                const monthlyDataVal = await monthlyRes.json();
+                if (isMounted) {
+                    console.log(monthlyDataVal)
+                    setDailyRecords(recordsData);
+                    setMonthlyData(monthlyDataVal);
+                    setLoading(false);
+                }
+            } catch (err) {
+                console.error('Error loading data:', err);
+                if (isMounted) {
+                    setError('Unable to load database records. Please verify that your Backend server is running and database configurations in .env are correct.');
+                    setLoading(false);
+                }
+            }
+        }
+        fetchData();
+        return () => {
+            isMounted = false;
+        };
+    }, []);
+
+
+
+    const handleAddRecord = useCallback(async (record) => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/records`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(record)
+            });
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.error || 'Failed to save record to database');
+            }
+            const savedRecord = await res.json();
+            setDailyRecords(prev => [...prev, savedRecord]);
+        } catch (err) {
+            console.error('Error saving record:', err);
+            alert(`Error saving record: ${err.message}`);
+        }
     }, []);
 
     // calculate totals
@@ -243,6 +300,79 @@ export default function Dashboard() {
             <Navbar />
 
             <main style={{ maxWidth: 1280, margin: '0 auto', padding: isSmallMobile ? '12px 10px 40px' : isMobile ? '16px 12px 48px' : '24px 16px 60px' }}>
+
+                {/* ─── Error Alert Banner ─── */}
+                {error && (
+                    <div style={{
+                        background: '#fef2f2',
+                        border: '1.5px solid #fca5a5',
+                        borderRadius: 12,
+                        padding: '16px 20px',
+                        marginBottom: 20,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 12,
+                        alignItems: 'flex-start',
+                        animation: 'fadeIn 0.3s ease-out both'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2.5" strokeLinecap="round">
+                                <circle cx="12" cy="12" r="10" />
+                                <line x1="12" y1="8" x2="12" y2="12" />
+                                <line x1="12" y1="16" x2="12.01" y2="16" />
+                            </svg>
+                            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#991b1b' }}>{error}</span>
+                        </div>
+                        <button
+                            onClick={() => window.location.reload()}
+                            style={{
+                                padding: '6px 14px',
+                                background: '#dc2626',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: 8,
+                                fontSize: '0.78rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                transition: 'all 0.2s',
+                                boxShadow: '0 2px 6px rgba(220,38,38,0.2)',
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-1px)'}
+                            onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+                        >
+                            Retry Connection
+                        </button>
+                    </div>
+                )}
+
+                {/* ─── Loading Spinner ─── */}
+                {loading && (
+                    <div style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '50px 20px',
+                        background: 'white',
+                        borderRadius: 16,
+                        border: '1px solid #f1f5f9',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                        marginBottom: 20,
+                        gap: 14,
+                        animation: 'fadeIn 0.3s ease-out both'
+                    }}>
+                        <div className="animate-spin" style={{
+                            width: 28,
+                            height: 28,
+                            border: '3.5px solid #eef2ff',
+                            borderTop: '3.5px solid #6366f1',
+                            borderRadius: '50%',
+                        }} />
+                        <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#64748b' }}>
+                            Retrieving data from database...
+                        </span>
+                    </div>
+                )}
 
                 {/* ─── Header ─── */}
                 <div

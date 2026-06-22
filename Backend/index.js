@@ -1,36 +1,92 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const mongoose = require('mongoose');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const MONGODB_URI = process.env.MONGODB_URI;
 
 // Enable CORS for frontend integration
 app.use(cors());
 app.use(express.json());
 
-// In-memory database initialized with sample data
-let dailyRecords = [
-    { id: 1, time: '06:15 AM', member: 'Juan Dela Cruz', type: 'Monthly', amount: 1500 },
-    { id: 2, time: '07:30 AM', member: 'Maria Santos', type: 'Walk-in', amount: 100 },
-    { id: 3, time: '08:00 AM', member: 'Carlos Reyes', type: 'Monthly', amount: 1500 },
-    { id: 4, time: '09:45 AM', member: 'Ana Garcia', type: 'Walk-in', amount: 100 },
-    { id: 5, time: '10:20 AM', member: 'Pedro Mendoza', type: 'Personal Training', amount: 800 },
-    { id: 6, time: '11:00 AM', member: 'Sofia Villanueva', type: 'Monthly', amount: 1500 },
-    { id: 7, time: '12:30 PM', member: 'Marco Tan', type: 'Walk-in', amount: 100 },
-    { id: 8, time: '01:15 PM', member: 'Isabella Cruz', type: 'Monthly', amount: 1500 },
-    { id: 9, time: '02:00 PM', member: 'Rafael Aquino', type: 'Personal Training', amount: 800 },
-    { id: 10, time: '03:30 PM', member: 'Camille Lim', type: 'Walk-in', amount: 100 },
-];
+// Database Connection
+const isPlaceholderUri = MONGODB_URI ? (MONGODB_URI.includes('<username>') || MONGODB_URI.includes('<password>')) : true;
 
-// Generate consistent monthly breakdown for mock analysis
-const monthlyData = Array.from({ length: 30 }, (_, i) => ({
-    day: i + 1,
-    sales: Math.floor(Math.random() * 6000) + 2000,
-    members: Math.floor(Math.random() * 20) + 5,
-}));
+if (!MONGODB_URI || isPlaceholderUri) {
+    console.warn('\n⚠️  [GymFlow Database Warning] MONGODB_URI is not set or contains placeholders (<username>/<password>).');
+    console.warn('⚠️  Please configure your database connection inside Backend/.env to connect to MongoDB Atlas.');
+    console.warn('⚠️  Attempting to connect to local MongoDB database fallback if available...\n');
+}
 
-// Helpers
-function formatTime(date) {
+mongoose.connect((!MONGODB_URI || isPlaceholderUri) ? 'mongodb://localhost:27017/gymflow' : MONGODB_URI)
+    .then(() => {
+        console.log('✅ Connected to MongoDB database successfully.');
+    })
+    .catch((err) => {
+        console.error('❌ Failed to connect to MongoDB:', err.message);
+        console.error('💡 Please verify your MongoDB connection string in Backend/.env');
+    });
+
+// Record Schema & Model Definition
+const recordSchema = new mongoose.Schema({
+    time: { type: String, required: true },
+    member: { type: String, required: true },
+    type: { type: String, required: true },
+    amount: { type: Number, required: true },
+}, {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
+});
+
+// Map _id to id virtual property for front-end compatibility
+recordSchema.virtual('id').get(function () {
+    return this._id.toHexString();
+});
+
+const ReyesGymRecords = mongoose.model('Record', recordSchema);
+
+const getMonthlyData = async () => {
+    const data = await ReyesGymRecords.aggregate([
+        {
+            $group: {
+                _id: {
+                    day: { $dayOfMonth: "$createdAt" }
+                },
+                sales: { $sum: "$amount" },
+                members: { $sum: 1 }
+            }
+        },
+        {
+            $sort: { "_id.day": 1 }
+        },
+        {
+            $project: {
+                _id: 0,
+                day: "$_id.day",
+                sales: 1,
+                members: 1
+            }
+        }
+    ]);
+    console.log(data)
+    return data
+};
+
+getMonthlyData();
+// Helper functions
+const formatDate = (date) => {
+    return date.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+    });
+};
+
+const formatTime = (date) => {
     return date.toLocaleTimeString('en-US', {
         hour: '2-digit',
         minute: '2-digit',
@@ -45,12 +101,18 @@ app.get('/api/health', (req, res) => {
 });
 
 // 2. Fetch daily receptionist records
-app.get('/api/records', (req, res) => {
-    res.json(dailyRecords);
+app.get('/api/records', async (req, res) => {
+    try {
+        const records = await ReyesGymRecords.find().sort({ createdAt: 1 });
+        res.json(records);
+    } catch (error) {
+        console.error('Error fetching records:', error);
+        res.status(500).json({ error: 'Failed to fetch records from database' });
+    }
 });
 
 // 3. Add a new record
-app.post('/api/records', (req, res) => {
+app.post('/api/records', async (req, res) => {
     const { member, type, amount, time } = req.body;
 
     // Simple validation
@@ -58,24 +120,27 @@ app.post('/api/records', (req, res) => {
         return res.status(400).json({ error: 'Missing required fields: member, type, amount' });
     }
 
-    const recordTime = time || formatTime(new Date());
-    const nextId = dailyRecords.length > 0 ? Math.max(...dailyRecords.map(r => r.id)) + 1 : 1;
+    try {
+        const recordTime = time || formatTime(new Date());
+        const newRecord = new ReyesGymRecords({
+            time: recordTime,
+            member: String(member).trim(),
+            type: String(type).trim(),
+            amount: Number(amount),
+        });
 
-    const newRecord = {
-        id: nextId,
-        time: recordTime,
-        member: String(member).trim(),
-        type: String(type).trim(),
-        amount: Number(amount),
-    };
-
-    dailyRecords.push(newRecord);
-    res.status(201).json(newRecord);
+        await newRecord.save();
+        res.status(201).json(newRecord);
+    } catch (error) {
+        console.error('Error creating record:', error);
+        res.status(500).json({ error: 'Failed to create record in database' });
+    }
 });
 
 // 4. Fetch monthly stats
-app.get('/api/monthly-data', (req, res) => {
-    res.json(monthlyData);
+app.get('/api/monthly-data', async (req, res) => {
+    const data = await getMonthlyData();
+    res.json(data);
 });
 
 // Start server
