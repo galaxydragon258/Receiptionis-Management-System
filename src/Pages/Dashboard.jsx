@@ -2,209 +2,14 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import Navbar from '../components/Navbar';
 import AddRecordModal from '../components/AddRecordModal';
 import useMediaQuery from '../hooks/useMediaQuery';
+import MonthlyChart from '../components/MonthlyChart';
+import { MONTHS, DAYS_SHORT } from '../assets/Data/DatesData';
+import { formatDate, formatTime, peso } from '../utils/utility';
+import StatCard from '../components/StatCard';
+import generateMonthlyBreakdown from '../assets/DataComputation/DataComputation';
 
 
-const MONTHS = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
-];
-
-const DAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-function formatDate(d) {
-    return d.toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-    });
-}
-
-function formatTime(d) {
-    return d.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-    });
-}
-
-function peso(n) {
-    return '₱' + Number(n).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-/* ─── sample data ─── */
-function generateDailyRecords(today) {
-    const records = [
-        { id: 1, time: '06:15 AM', member: 'Juan Dela Cruz', type: 'Monthly', amount: 1500 },
-        { id: 2, time: '07:30 AM', member: 'Maria Santos', type: 'Walk-in', amount: 100 },
-        { id: 3, time: '08:00 AM', member: 'Carlos Reyes', type: 'Monthly', amount: 1500 },
-        { id: 4, time: '09:45 AM', member: 'Ana Garcia', type: 'Walk-in', amount: 100 },
-        { id: 5, time: '10:20 AM', member: 'Pedro Mendoza', type: 'Personal Training', amount: 800 },
-        { id: 6, time: '11:00 AM', member: 'Sofia Villanueva', type: 'Monthly', amount: 1500 },
-        { id: 7, time: '12:30 PM', member: 'Marco Tan', type: 'Walk-in', amount: 100 },
-        { id: 8, time: '01:15 PM', member: 'Isabella Cruz', type: 'Monthly', amount: 1500 },
-        { id: 9, time: '02:00 PM', member: 'Rafael Aquino', type: 'Personal Training', amount: 800 },
-        { id: 10, time: '03:30 PM', member: 'Camille Lim', type: 'Walk-in', amount: 100 },
-    ];
-    return records;
-}
-
-function generateMonthlyBreakdown() {
-    return Array.from({ length: 30 }, (_, i) => ({
-        day: i + 1,
-        sales: Math.floor(Math.random() * 6000) + 2000,
-        members: Math.floor(Math.random() * 20) + 5,
-    }));
-}
-
-/* ═══════════════════════════════════════════
-   STAT CARD
-   ═══════════════════════════════════════════ */
-function StatCard({ icon, label, value, sub, accent, delay, isMobile, isSmallMobile }) {
-    const colors = {
-        indigo: { bg: '#eef2ff', iconBg: 'linear-gradient(135deg, #6366f1, #818cf8)', shadow: 'rgba(99,102,241,0.18)' },
-        emerald: { bg: '#ecfdf5', iconBg: 'linear-gradient(135deg, #10b981, #34d399)', shadow: 'rgba(16,185,129,0.18)' },
-        amber: { bg: '#fffbeb', iconBg: 'linear-gradient(135deg, #f59e0b, #fbbf24)', shadow: 'rgba(245,158,11,0.18)' },
-        rose: { bg: '#fff1f2', iconBg: 'linear-gradient(135deg, #f43f5e, #fb7185)', shadow: 'rgba(244,63,94,0.18)' },
-        sky: { bg: '#f0f9ff', iconBg: 'linear-gradient(135deg, #0ea5e9, #38bdf8)', shadow: 'rgba(14,165,233,0.18)' },
-    };
-    const c = colors[accent] || colors.indigo;
-
-    const iconSize = isSmallMobile ? 32 : isMobile ? 38 : 46;
-
-    return (
-        <div
-            className={`animate-fade-in-up delay-${delay}`}
-            style={{
-                background: 'white',
-                borderRadius: isSmallMobile ? 12 : 16,
-                padding: isSmallMobile ? '14px 14px' : isMobile ? '16px 18px' : '22px 24px',
-                border: '1px solid #f1f5f9',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 14px rgba(0,0,0,0.03)',
-                transition: 'all 0.3s cubic-bezier(0.4,0,0.2,1)',
-                cursor: 'default',
-                opacity: 0,
-                minWidth: 0,
-                overflow: 'hidden',
-            }}
-            onMouseEnter={e => {
-                e.currentTarget.style.transform = 'translateY(-3px)';
-                e.currentTarget.style.boxShadow = `0 8px 28px ${c.shadow}`;
-                e.currentTarget.style.borderColor = '#e0e7ff';
-            }}
-            onMouseLeave={e => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04), 0 4px 14px rgba(0,0,0,0.03)';
-                e.currentTarget.style.borderColor = '#f1f5f9';
-            }}
-        >
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: isSmallMobile ? 8 : 12 }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: isSmallMobile ? '0.68rem' : '0.78rem', fontWeight: 500, color: '#94a3b8', marginBottom: isSmallMobile ? 4 : 8, letterSpacing: '0.01em' }}>
-                        {label}
-                    </p>
-                    <p style={{
-                        fontSize: isSmallMobile ? '1.15rem' : isMobile ? '1.3rem' : '1.6rem',
-                        fontWeight: 800,
-                        letterSpacing: '-0.03em',
-                        color: '#1e293b',
-                        lineHeight: 1.1,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                    }}>
-                        {value}
-                    </p>
-                    {sub && (
-                        <p style={{ fontSize: isSmallMobile ? '0.62rem' : '0.72rem', color: '#94a3b8', marginTop: isSmallMobile ? 4 : 8, fontWeight: 500 }}>
-                            {sub}
-                        </p>
-                    )}
-                </div>
-                <div
-                    style={{
-                        width: iconSize,
-                        height: iconSize,
-                        borderRadius: isSmallMobile ? 8 : 13,
-                        background: c.iconBg,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        boxShadow: `0 4px 12px ${c.shadow}`,
-                        flexShrink: 0,
-                    }}
-                >
-                    {icon}
-                </div>
-            </div>
-        </div>
-    );
-}
-
-/* ═══════════════════════════════════════════
-   MINI MONTHLY CHART (SVG bar chart)
-   ═══════════════════════════════════════════ */
-function MonthlyChart({ data }) {
-    const max = Math.max(...data.map(d => d.sales));
-
-    return (
-        <div style={{ width: '100%', overflow: 'hidden' }}>
-            <svg
-                viewBox={`0 0 ${data.length * 24} 100`}
-                style={{ width: '100%', height: 120 }}
-                preserveAspectRatio="none"
-            >
-                <defs>
-                    <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#6366f1" />
-                        <stop offset="100%" stopColor="#a5b4fc" />
-                    </linearGradient>
-                </defs>
-                {data.map((d, i) => {
-                    const h = (d.sales / max) * 80;
-                    return (
-                        <g key={i}>
-                            <rect
-                                x={i * 24 + 4}
-                                y={90 - h}
-                                width={16}
-                                height={h}
-                                rx={4}
-                                fill="url(#barGrad)"
-                                opacity={0.85}
-                                style={{ transition: 'height 0.5s ease, y 0.5s ease' }}
-                            />
-                            {/* Highlight today */}
-                            {d.day === new Date().getDate() && (
-                                <rect
-                                    x={i * 24 + 4}
-                                    y={90 - h}
-                                    width={16}
-                                    height={h}
-                                    rx={4}
-                                    fill="#6366f1"
-                                    opacity={1}
-                                />
-                            )}
-                        </g>
-                    );
-                })}
-                {/* baseline */}
-                <line x1="0" y1="90" x2={data.length * 24} y2="90" stroke="#e5e7eb" strokeWidth="1" />
-            </svg>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 4px 0' }}>
-                {data.filter((_, i) => i % 5 === 0 || i === data.length - 1).map(d => (
-                    <span key={d.day} style={{ fontSize: '0.6rem', color: '#94a3b8', fontWeight: 500 }}>
-                        {d.day}
-                    </span>
-                ))}
-            </div>
-        </div>
-    );
-}
-
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||
     (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
         ? 'http://localhost:5000/api'
         : 'https://receiptionis-management-system-kydk.vercel.app/api');
@@ -616,7 +421,7 @@ export default function Dashboard() {
                             <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 4px' }}>
                                 <thead>
                                     <tr>
-                                        {['#', 'Time', 'Member', 'Type', 'Amount'].map(h => (
+                                        {['#', 'OR #', 'Date', 'Time', 'Member', 'Type', 'Amount', 'Created By'].map(h => (
                                             <th
                                                 key={h}
                                                 style={{
@@ -636,7 +441,7 @@ export default function Dashboard() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {dailyRecords.map((r) => (
+                                    {dailyRecords.map((r, idx) => (
                                         <tr
                                             key={r.id}
                                             style={{
@@ -647,7 +452,13 @@ export default function Dashboard() {
                                             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                                         >
                                             <td style={{ padding: '12px 14px', fontSize: '0.8rem', color: '#94a3b8', fontWeight: 500, borderRadius: '10px 0 0 10px' }}>
-                                                {r.id}
+                                                {idx + 1}
+                                            </td>
+                                            <td style={{ padding: '12px 14px', fontSize: '0.8rem', color: '#1e293b', fontWeight: 600 }}>
+                                                {r.orNumber || '—'}
+                                            </td>
+                                            <td style={{ padding: '12px 14px', fontSize: '0.8rem', color: '#64748b', fontWeight: 500 }}>
+                                                {r.date || '—'}
                                             </td>
                                             <td style={{ padding: '12px 14px', fontSize: '0.8rem', color: '#64748b', fontWeight: 500 }}>
                                                 {r.time}
@@ -674,21 +485,25 @@ export default function Dashboard() {
                                                     {r.type}
                                                 </span>
                                             </td>
-                                            <td style={{ padding: '12px 14px', textAlign: 'right', fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', borderRadius: '0 10px 10px 0' }}>
+                                            <td style={{ padding: '12px 14px', textAlign: 'right', fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>
                                                 {peso(r.amount)}
+                                            </td>
+                                            <td style={{ padding: '12px 14px', fontSize: '0.8rem', color: '#64748b', fontWeight: 500, borderRadius: '0 10px 10px 0' }}>
+                                                {r.createdBy || '—'}
                                             </td>
                                         </tr>
                                     ))}
                                 </tbody>
                                 <tfoot>
                                     <tr style={{ borderTop: '2px solid #f1f5f9' }}>
-                                        <td colSpan={3} style={{ padding: '14px', fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>
+                                        <td colSpan={5} style={{ padding: '14px', fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>
                                             Total Sales Today
                                         </td>
                                         <td />
                                         <td style={{ padding: '14px', textAlign: 'right', fontSize: '1rem', fontWeight: 800, color: '#6366f1' }}>
                                             {peso(totalSalesToday)}
                                         </td>
+                                        <td />
                                     </tr>
                                 </tfoot>
                             </table>
@@ -706,37 +521,73 @@ export default function Dashboard() {
                                             border: '1px solid #f1f5f9',
                                             background: '#fafbff',
                                             display: 'flex',
-                                            justifyContent: 'space-between',
-                                            alignItems: 'center',
-                                            gap: isSmallMobile ? 8 : 12,
+                                            flexDirection: 'column',
+                                            gap: 8,
                                         }}
                                     >
-                                        <div style={{ flex: 1, minWidth: 0 }}>
-                                            <p style={{ fontSize: isSmallMobile ? '0.78rem' : '0.82rem', fontWeight: 600, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                                {r.member}
-                                            </p>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                                                <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{r.time}</span>
-                                                <span style={{
-                                                    display: 'inline-block',
-                                                    padding: '2px 8px',
-                                                    borderRadius: 5,
-                                                    fontSize: '0.65rem',
-                                                    fontWeight: 600,
-                                                    background:
-                                                        r.type === 'Monthly' ? '#eef2ff' :
-                                                            r.type === 'Walk-in' ? '#f0f9ff' : '#fdf4ff',
-                                                    color:
-                                                        r.type === 'Monthly' ? '#6366f1' :
-                                                            r.type === 'Walk-in' ? '#0ea5e9' : '#a855f7',
-                                                }}>
-                                                    {r.type}
-                                                </span>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: isSmallMobile ? 8 : 12 }}>
+                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                <p style={{ fontSize: isSmallMobile ? '0.78rem' : '0.82rem', fontWeight: 600, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                    {r.member}
+                                                </p>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
+                                                    <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{r.time}</span>
+                                                    <span style={{
+                                                        display: 'inline-block',
+                                                        padding: '2px 8px',
+                                                        borderRadius: 5,
+                                                        fontSize: '0.65rem',
+                                                        fontWeight: 600,
+                                                        background:
+                                                            r.type === 'Monthly' ? '#eef2ff' :
+                                                                r.type === 'Walk-in' ? '#f0f9ff' : '#fdf4ff',
+                                                        color:
+                                                            r.type === 'Monthly' ? '#6366f1' :
+                                                                r.type === 'Walk-in' ? '#0ea5e9' : '#a855f7',
+                                                    }}>
+                                                        {r.type}
+                                                    </span>
+                                                    {r.orNumber && (
+                                                        <span style={{
+                                                            fontSize: '0.68rem',
+                                                            color: '#64748b',
+                                                            background: '#e2e8f0',
+                                                            padding: '2px 6px',
+                                                            borderRadius: 4,
+                                                            fontWeight: 500,
+                                                        }}>
+                                                            OR: {r.orNumber}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
+                                            <p style={{ fontSize: isSmallMobile ? '0.82rem' : '0.9rem', fontWeight: 700, color: '#1e293b', flexShrink: 0 }}>
+                                                {peso(r.amount)}
+                                            </p>
                                         </div>
-                                        <p style={{ fontSize: isSmallMobile ? '0.82rem' : '0.9rem', fontWeight: 700, color: '#1e293b', flexShrink: 0 }}>
-                                            {peso(r.amount)}
-                                        </p>
+
+                                        {(r.date || r.createdBy) && (
+                                            <div style={{
+                                                display: 'flex',
+                                                gap: 12,
+                                                fontSize: '0.7rem',
+                                                color: '#94a3b8',
+                                                borderTop: '1px solid #f1f5f9',
+                                                paddingTop: 6,
+                                                flexWrap: 'wrap',
+                                            }}>
+                                                {r.date && (
+                                                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                        📅 {r.date}
+                                                    </span>
+                                                )}
+                                                {r.createdBy && (
+                                                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                        👤 {r.createdBy}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                                 {/* Mobile Total */}

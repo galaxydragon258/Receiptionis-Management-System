@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import useMediaQuery from '../hooks/useMediaQuery';
+import { formatDate } from '../utils/utility';
 
 const TYPE_OPTIONS = [
-    { value: 'Monthly', label: 'Monthly Membership', amount: 1500, color: '#6366f1', bg: '#eef2ff' },
-    { value: 'Walk-in', label: 'Walk-in / Day Pass', amount: 100, color: '#0ea5e9', bg: '#f0f9ff' },
-    { value: 'Personal Training', label: 'Personal Training', amount: 800, color: '#a855f7', bg: '#fdf4ff' },
+    { value: 'Monthly', label: 'Monthly Membership', amount: 2100, color: '#6366f1', bg: '#eef2ff' },
+    { value: 'Walk-in', label: 'Walk-in / Day Pass', amount: 500, color: '#0ea5e9', bg: '#f0f9ff' },
+    { value: 'Personal Training', label: 'Personal Training', amount: 1200, color: '#a855f7', bg: '#fdf4ff' },
 ];
 
 function peso(n) {
@@ -14,8 +15,17 @@ function peso(n) {
 export default function AddRecordModal({ isOpen, onClose, onAdd }) {
     const [name, setName] = useState('');
     const [type, setType] = useState('Monthly');
-    const [amount, setAmount] = useState(1500);
+    const [amount, setAmount] = useState();
     const [customAmount, setCustomAmount] = useState(false);
+    const [orNumber, setOrNumber] = useState('');
+    const [recordDate, setRecordDate] = useState(() => {
+        const d = new Date();
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    });
+    const [createdBy, setCreatedBy] = useState('admin');
     const [closing, setClosing] = useState(false);
     const nameRef = useRef(null);
     const isMobile = useMediaQuery('(max-width: 480px)');
@@ -33,8 +43,15 @@ export default function AddRecordModal({ isOpen, onClose, onAdd }) {
         if (isOpen) {
             setName('');
             setType('Monthly');
-            setAmount(1500);
+            setAmount(2100);
             setCustomAmount(false);
+            setOrNumber('');
+            const d = new Date();
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            setRecordDate(`${year}-${month}-${day}`);
+            setCreatedBy('admin');
             setClosing(false);
             setTimeout(() => nameRef.current?.focus(), 150);
         }
@@ -62,11 +79,20 @@ export default function AddRecordModal({ isOpen, onClose, onAdd }) {
             hour12: true,
         });
 
+        let finalDate = '';
+        if (recordDate) {
+            const parsedDate = new Date(recordDate + 'T00:00:00');
+            finalDate = formatDate(parsedDate);
+        }
+
         onAdd({
             member: name.trim(),
             type,
             amount: Number(amount),
             time: timeStr,
+            orNumber: orNumber.trim(),
+            date: finalDate,
+            createdBy: createdBy.trim(),
         });
 
         handleClose();
@@ -374,6 +400,133 @@ export default function AddRecordModal({ isOpen, onClose, onAdd }) {
                         )}
                     </div>
 
+                    {/* OR Number and Date */}
+                    <div style={{ display: 'flex', gap: 16, marginBottom: 20, flexDirection: isMobile ? 'column' : 'row' }}>
+                        {/* OR Number */}
+                        <div style={{ flex: 1 }}>
+                            <label style={{
+                                display: 'block',
+                                fontSize: '0.75rem',
+                                fontWeight: 600,
+                                color: '#475569',
+                                marginBottom: 8,
+                                letterSpacing: '0.02em',
+                            }}>
+                                OR Number
+                            </label>
+                            <input
+                                type="text"
+                                value={orNumber}
+                                onChange={e => setOrNumber(e.target.value)}
+                                placeholder="e.g. OR-10234"
+                                style={{
+                                    width: '100%',
+                                    padding: '12px 16px',
+                                    borderRadius: 12,
+                                    border: '1.5px solid #e2e8f0',
+                                    fontSize: '0.88rem',
+                                    fontWeight: 500,
+                                    color: '#1e293b',
+                                    outline: 'none',
+                                    transition: 'border-color 0.2s, box-shadow 0.2s',
+                                    background: '#fafbff',
+                                    fontFamily: 'inherit',
+                                }}
+                                onFocus={e => {
+                                    e.target.style.borderColor = '#a5b4fc';
+                                    e.target.style.boxShadow = '0 0 0 3px rgba(99,102,241,0.1)';
+                                }}
+                                onBlur={e => {
+                                    e.target.style.borderColor = '#e2e8f0';
+                                    e.target.style.boxShadow = 'none';
+                                }}
+                            />
+                        </div>
+
+                        {/* Date */}
+                        <div style={{ flex: 1 }}>
+                            <label style={{
+                                display: 'block',
+                                fontSize: '0.75rem',
+                                fontWeight: 600,
+                                color: '#475569',
+                                marginBottom: 8,
+                                letterSpacing: '0.02em',
+                            }}>
+                                Date
+                            </label>
+                            <input
+                                type="date"
+                                value={recordDate}
+                                onChange={e => setRecordDate(e.target.value)}
+                                required
+                                style={{
+                                    width: '100%',
+                                    padding: '12px 16px',
+                                    borderRadius: 12,
+                                    border: '1.5px solid #e2e8f0',
+                                    fontSize: '0.88rem',
+                                    fontWeight: 500,
+                                    color: '#1e293b',
+                                    outline: 'none',
+                                    transition: 'border-color 0.2s, box-shadow 0.2s',
+                                    background: '#fafbff',
+                                    fontFamily: 'inherit',
+                                }}
+                                onFocus={e => {
+                                    e.target.style.borderColor = '#a5b4fc';
+                                    e.target.style.boxShadow = '0 0 0 3px rgba(99,102,241,0.1)';
+                                }}
+                                onBlur={e => {
+                                    e.target.style.borderColor = '#e2e8f0';
+                                    e.target.style.boxShadow = 'none';
+                                }}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Created By / Receptionist */}
+                    <div style={{ marginBottom: 24 }}>
+                        <label style={{
+                            display: 'block',
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            color: '#475569',
+                            marginBottom: 8,
+                            letterSpacing: '0.02em',
+                        }}>
+                            Created By (Receptionist)
+                        </label>
+                        <input
+                            type="text"
+                            value={createdBy}
+                            onChange={e => setCreatedBy(e.target.value)}
+                            placeholder="e.g. admin"
+                            required
+                            style={{
+                                width: '100%',
+                                padding: '12px 16px',
+                                borderRadius: 12,
+                                border: '1.5px solid #e2e8f0',
+                                fontSize: '0.88rem',
+                                fontWeight: 500,
+                                color: '#1e293b',
+                                outline: 'none',
+                                transition: 'border-color 0.2s, box-shadow 0.2s',
+                                background: '#fafbff',
+                                fontFamily: 'inherit',
+                            }}
+                            onFocus={e => {
+                                e.target.style.borderColor = '#a5b4fc';
+                                e.target.style.boxShadow = '0 0 0 3px rgba(99,102,241,0.1)';
+                            }}
+                            onBlur={e => {
+                                e.target.style.borderColor = '#e2e8f0';
+                                e.target.style.boxShadow = 'none';
+                            }}
+                        />
+                    </div>
+
                     {/* Preview */}
                     <div style={{
                         background: '#f8fafc',
@@ -407,18 +560,30 @@ export default function AddRecordModal({ isOpen, onClose, onAdd }) {
                                     <p style={{ fontSize: '0.82rem', fontWeight: 600, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                         {name.trim() || 'Member Name'}
                                     </p>
-                                    <span style={{
-                                        display: 'inline-block',
-                                        padding: '1px 8px',
-                                        borderRadius: 5,
-                                        fontSize: '0.65rem',
-                                        fontWeight: 600,
-                                        background: selectedType?.bg || '#f1f5f9',
-                                        color: selectedType?.color || '#94a3b8',
-                                        marginTop: 2,
-                                    }}>
-                                        {type}
-                                    </span>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginTop: 2 }}>
+                                        <span style={{
+                                            display: 'inline-block',
+                                            padding: '1px 8px',
+                                            borderRadius: 5,
+                                            fontSize: '0.65rem',
+                                            fontWeight: 600,
+                                            background: selectedType?.bg || '#f1f5f9',
+                                            color: selectedType?.color || '#94a3b8',
+                                        }}>
+                                            {type}
+                                        </span>
+                                        {orNumber.trim() && (
+                                            <span style={{ fontSize: '0.68rem', color: '#64748b', background: '#e2e8f0', padding: '1px 6px', borderRadius: 4, fontWeight: 500 }}>
+                                                OR: {orNumber.trim()}
+                                            </span>
+                                        )}
+                                    </div>
+                                    {(recordDate || createdBy.trim()) && (
+                                        <div style={{ display: 'flex', gap: 8, marginTop: 4, fontSize: '0.68rem', color: '#94a3b8' }}>
+                                            {recordDate && <span>Date: {recordDate}</span>}
+                                            {createdBy.trim() && <span>By: {createdBy.trim()}</span>}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                             <p style={{ fontSize: '1rem', fontWeight: 800, color: '#1e293b', flexShrink: 0 }}>

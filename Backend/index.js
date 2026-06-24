@@ -60,6 +60,9 @@ const recordSchema = new mongoose.Schema({
     member: { type: String, required: true },
     type: { type: String, required: true },
     amount: { type: Number, required: true },
+    orNumber: { type: String, default: '' },
+    date: { type: String, default: '' },
+    createdBy: { type: String, default: 'admin' },
 }, {
     timestamps: true,
     toJSON: { virtuals: true },
@@ -147,7 +150,7 @@ app.get('/api/records', async (req, res) => {
 
 // 3. Add a new record
 app.post('/api/records', async (req, res) => {
-    const { member, type, amount, time } = req.body;
+    const { member, type, amount, time, orNumber, date, createdBy } = req.body;
 
     // Simple validation
     if (!member || !type || amount === undefined) {
@@ -156,11 +159,15 @@ app.post('/api/records', async (req, res) => {
 
     try {
         const recordTime = time || formatTime(new Date());
+        const recordDate = date || formatDate(new Date());
         const newRecord = new ReyesGymRecords({
             time: recordTime,
             member: String(member).trim(),
             type: String(type).trim(),
             amount: Number(amount),
+            orNumber: orNumber ? String(orNumber).trim() : '',
+            date: recordDate,
+            createdBy: createdBy ? String(createdBy).trim() : 'admin',
         });
 
         await newRecord.save();
