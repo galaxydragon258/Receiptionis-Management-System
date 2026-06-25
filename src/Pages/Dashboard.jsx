@@ -44,6 +44,7 @@ export default function Dashboard() {
                     fetch(`${API_BASE_URL}/records`),
                     fetch(`${API_BASE_URL}/monthly-data`)
                 ]);
+
                 if (!recordsRes.ok) {
                     throw new Error('Failed to fetch records from database server');
                 }

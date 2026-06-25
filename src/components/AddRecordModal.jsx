@@ -18,6 +18,7 @@ export default function AddRecordModal({ isOpen, onClose, onAdd }) {
     const [amount, setAmount] = useState();
     const [customAmount, setCustomAmount] = useState(false);
     const [orNumber, setOrNumber] = useState('');
+
     const [recordDate, setRecordDate] = useState(() => {
         const d = new Date();
         const year = d.getFullYear();
@@ -54,11 +55,13 @@ export default function AddRecordModal({ isOpen, onClose, onAdd }) {
             setCreatedBy('admin');
             setClosing(false);
             setTimeout(() => nameRef.current?.focus(), 150);
+            document.body.style.overflow = 'hidden';
         }
     }, [isOpen]);
 
     function handleClose() {
         setClosing(true);
+        document.body.style.overflow = 'auto';
         setTimeout(() => {
             setClosing(false);
             onClose();
@@ -148,7 +151,7 @@ export default function AddRecordModal({ isOpen, onClose, onAdd }) {
 
             {/* Modal Card */}
             <div
-                className={closing ? 'modal-card-exit' : 'modal-card-enter'}
+                className={closing ? 'modal-card-exit' : 'modal-card-enter '}
                 style={{
                     position: 'relative',
                     width: '100%',
@@ -159,6 +162,8 @@ export default function AddRecordModal({ isOpen, onClose, onAdd }) {
                     overflow: 'hidden',
                     maxHeight: isMobile ? '90vh' : '85vh',
                     overflowY: 'auto',
+                    scrollbarWidth: 'none',
+
                 }}
             >
                 {/* Header gradient bar */}
@@ -170,17 +175,10 @@ export default function AddRecordModal({ isOpen, onClose, onAdd }) {
                         overflow: 'hidden',
                     }}
                 >
-                    {/* Decorative circles */}
-                    <div style={{
-                        position: 'absolute', top: -20, right: -20, width: 80, height: 80,
-                        borderRadius: '50%', background: 'rgba(255,255,255,0.08)',
-                    }} />
-                    <div style={{
-                        position: 'absolute', bottom: -15, left: 30, width: 50, height: 50,
-                        borderRadius: '50%', background: 'rgba(255,255,255,0.05)',
-                    }} />
 
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative' }}>
+                    <div
+
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative' }}>
                         <div>
                             <h2 style={{
                                 fontSize: isMobile ? '1.05rem' : '1.15rem',

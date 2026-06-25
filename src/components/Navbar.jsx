@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import useMediaQuery from '../hooks/useMediaQuery';
 
 export default function Navbar() {
     const isMobile = useMediaQuery('(max-width: 480px)');
+    const isTabletOrMobile = useMediaQuery('(max-width: 768px)');
+    const [isOpen, setIsOpen] = useState(false);
 
     return (
         <nav
@@ -40,19 +43,19 @@ export default function Navbar() {
                             justifyContent: 'center',
                             boxShadow: '0 4px 14px rgba(99,102,241,0.25)',
                             flexShrink: 0,
-                        
+
                         }}
                     >
                         {/* dumbbell icon */}
                         <img src='/Logo.jpg'
-                        style={{
-                            width:'100%',
-                            height:'100%',
-                            objectFit:'cover',
-                            borderRadius:'12px'
-                        }}
+                            style={{
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'cover',
+                                borderRadius: '12px'
+                            }}
                         />
-                        
+
                     </div>
                     <div>
                         <h1 style={{ fontSize: isMobile ? '0.88rem' : '1.05rem', fontWeight: 800, letterSpacing: '-0.02em', color: '#1e293b', lineHeight: 1.2 }}>
@@ -63,6 +66,65 @@ export default function Navbar() {
                         </p>
                     </div>
                 </div>
+
+                {/* Desktop Nav */}
+                {!isTabletOrMobile && (
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 12,
+                    }}>
+                        <nav style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 8,
+                            listStyle: 'none',
+                            padding: 0,
+                            margin: 0,
+                        }}>
+                            <li style={{
+                                color: '#6366f1',
+                                fontWeight: 600,
+                                fontSize: '0.8rem',
+                                cursor: 'pointer',
+                                padding: '8px 16px',
+                                borderRadius: '8px',
+                                background: '#f5f3ff',
+                                transition: 'all 0.2s',
+                            }}>
+                                Dashboard
+                            </li>
+                            <li style={{
+                                color: '#475569',
+                                fontWeight: 600,
+                                fontSize: '0.8rem',
+                                cursor: 'pointer',
+                                padding: '8px 16px',
+                                borderRadius: '8px',
+                                transition: 'all 0.2s',
+                            }}
+                            onMouseEnter={e => { e.currentTarget.style.color = '#6366f1'; e.currentTarget.style.backgroundColor = '#f8fafc'; }}
+                            onMouseLeave={e => { e.currentTarget.style.color = '#475569'; e.currentTarget.style.backgroundColor = 'transparent'; }}
+                            >
+                                Records
+                            </li>
+                            <li style={{
+                                color: '#475569',
+                                fontWeight: 600,
+                                fontSize: '0.8rem',
+                                cursor: 'pointer',
+                                padding: '8px 16px',
+                                borderRadius: '8px',
+                                transition: 'all 0.2s',
+                            }}
+                            onMouseEnter={e => { e.currentTarget.style.color = '#6366f1'; e.currentTarget.style.backgroundColor = '#f8fafc'; }}
+                            onMouseLeave={e => { e.currentTarget.style.color = '#475569'; e.currentTarget.style.backgroundColor = 'transparent'; }}
+                            >
+                                Members
+                            </li>
+                        </nav>
+                    </div>
+                )}
 
                 {/* Right side — Avatar */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 12 }}>
@@ -115,8 +177,116 @@ export default function Navbar() {
                     >
                         AD
                     </div>
+
+                    {/* Hamburger Button (Mobile only) */}
+                    {isTabletOrMobile && (
+                        <button
+                            onClick={() => setIsOpen(!isOpen)}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                width: isMobile ? 34 : 38,
+                                height: isMobile ? 34 : 38,
+                                borderRadius: isMobile ? 8 : 10,
+                                border: '1px solid #e5e7eb',
+                                background: 'white',
+                                cursor: 'pointer',
+                                color: '#64748b',
+                                transition: 'all 0.2s',
+                                padding: 0,
+                            }}
+                            onMouseEnter={e => { e.currentTarget.style.borderColor = '#c7d2fe'; e.currentTarget.style.color = '#6366f1'; }}
+                            onMouseLeave={e => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.color = '#64748b'; }}
+                            aria-label="Toggle menu"
+                        >
+                            <svg
+                                width="18"
+                                height="18"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                style={{ transition: 'transform 0.2s' }}
+                            >
+                                {isOpen ? (
+                                    <>
+                                        <line x1="18" y1="6" x2="6" y2="18" />
+                                        <line x1="6" y1="6" x2="18" y2="18" />
+                                    </>
+                                ) : (
+                                    <>
+                                        <line x1="3" y1="12" x2="21" y2="12" />
+                                        <line x1="3" y1="6" x2="21" y2="6" />
+                                        <line x1="3" y1="18" x2="21" y2="18" />
+                                    </>
+                                )}
+                            </svg>
+                        </button>
+                    )}
                 </div>
             </div>
+
+            {/* Mobile Nav Drawer */}
+            {isTabletOrMobile && isOpen && (
+                <div
+                    className="animate-slide-down"
+                    style={{
+                        borderTop: '1px solid #e5e7eb',
+                        padding: '12px 0 16px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 6,
+                    }}
+                >
+                    <div
+                        style={{
+                            color: '#6366f1',
+                            fontWeight: 600,
+                            fontSize: '0.85rem',
+                            cursor: 'pointer',
+                            padding: '10px 16px',
+                            borderRadius: '8px',
+                            background: '#f5f3ff',
+                            transition: 'all 0.2s',
+                        }}
+                    >
+                        Dashboard
+                    </div>
+                    <div
+                        style={{
+                            color: '#475569',
+                            fontWeight: 600,
+                            fontSize: '0.85rem',
+                            cursor: 'pointer',
+                            padding: '10px 16px',
+                            borderRadius: '8px',
+                            transition: 'all 0.2s',
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.color = '#6366f1'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#475569'; }}
+                    >
+                        Records
+                    </div>
+                    <div
+                        style={{
+                            color: '#475569',
+                            fontWeight: 600,
+                            fontSize: '0.85rem',
+                            cursor: 'pointer',
+                            padding: '10px 16px',
+                            borderRadius: '8px',
+                            transition: 'all 0.2s',
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.color = '#6366f1'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#475569'; }}
+                    >
+                        Members
+                    </div>
+                </div>
+            )}
         </nav>
     );
 }
