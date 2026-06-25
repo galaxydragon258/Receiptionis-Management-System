@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import useMediaQuery from '../hooks/useMediaQuery';
 
 export default function Navbar() {
     const isMobile = useMediaQuery('(max-width: 480px)');
     const isTabletOrMobile = useMediaQuery('(max-width: 768px)');
     const [isOpen, setIsOpen] = useState(false);
+    const location = useLocation();
 
     return (
         <nav
@@ -82,46 +84,38 @@ export default function Navbar() {
                             padding: 0,
                             margin: 0,
                         }}>
-                            <li style={{
-                                color: '#6366f1',
-                                fontWeight: 600,
-                                fontSize: '0.8rem',
-                                cursor: 'pointer',
-                                padding: '8px 16px',
-                                borderRadius: '8px',
-                                background: '#f5f3ff',
-                                transition: 'all 0.2s',
-                            }}>
-                                Dashboard
-                            </li>
-                            <li style={{
-                                color: '#475569',
-                                fontWeight: 600,
-                                fontSize: '0.8rem',
-                                cursor: 'pointer',
-                                padding: '8px 16px',
-                                borderRadius: '8px',
-                                transition: 'all 0.2s',
-                            }}
-                            onMouseEnter={e => { e.currentTarget.style.color = '#6366f1'; e.currentTarget.style.backgroundColor = '#f8fafc'; }}
-                            onMouseLeave={e => { e.currentTarget.style.color = '#475569'; e.currentTarget.style.backgroundColor = 'transparent'; }}
+                            <Link
+                                to="/"
+                                style={{
+                                    color: location.pathname === '/' ? '#6366f1' : '#475569',
+                                    fontWeight: 600,
+                                    fontSize: '0.8rem',
+                                    cursor: 'pointer',
+                                    padding: '8px 16px',
+                                    borderRadius: '8px',
+                                    background: location.pathname === '/' ? '#f5f3ff' : 'transparent',
+                                    transition: 'all 0.2s',
+                                    textDecoration: 'none',
+                                }}
                             >
-                                Records
-                            </li>
-                            <li style={{
-                                color: '#475569',
-                                fontWeight: 600,
-                                fontSize: '0.8rem',
-                                cursor: 'pointer',
-                                padding: '8px 16px',
-                                borderRadius: '8px',
-                                transition: 'all 0.2s',
-                            }}
-                            onMouseEnter={e => { e.currentTarget.style.color = '#6366f1'; e.currentTarget.style.backgroundColor = '#f8fafc'; }}
-                            onMouseLeave={e => { e.currentTarget.style.color = '#475569'; e.currentTarget.style.backgroundColor = 'transparent'; }}
+                                Dashboard
+                            </Link>
+                            <Link
+                                to="/members"
+                                style={{
+                                    color: location.pathname === '/members' ? '#6366f1' : '#475569',
+                                    fontWeight: 600,
+                                    fontSize: '0.8rem',
+                                    cursor: 'pointer',
+                                    padding: '8px 16px',
+                                    borderRadius: '8px',
+                                    background: location.pathname === '/members' ? '#f5f3ff' : 'transparent',
+                                    transition: 'all 0.2s',
+                                    textDecoration: 'none',
+                                }}
                             >
                                 Members
-                            </li>
+                            </Link>
                         </nav>
                     </div>
                 )}
@@ -241,50 +235,40 @@ export default function Navbar() {
                         gap: 6,
                     }}
                 >
-                    <div
+                    <Link
+                        to="/"
+                        onClick={() => setIsOpen(false)}
                         style={{
-                            color: '#6366f1',
+                            color: location.pathname === '/' ? '#6366f1' : '#475569',
                             fontWeight: 600,
                             fontSize: '0.85rem',
                             cursor: 'pointer',
                             padding: '10px 16px',
                             borderRadius: '8px',
-                            background: '#f5f3ff',
+                            background: location.pathname === '/' ? '#f5f3ff' : 'transparent',
                             transition: 'all 0.2s',
+                            textDecoration: 'none',
                         }}
                     >
                         Dashboard
-                    </div>
-                    <div
+                    </Link>
+                    <Link
+                        to="/members"
+                        onClick={() => setIsOpen(false)}
                         style={{
-                            color: '#475569',
+                            color: location.pathname === '/members' ? '#6366f1' : '#475569',
                             fontWeight: 600,
                             fontSize: '0.85rem',
                             cursor: 'pointer',
                             padding: '10px 16px',
                             borderRadius: '8px',
+                            background: location.pathname === '/members' ? '#f5f3ff' : 'transparent',
                             transition: 'all 0.2s',
+                            textDecoration: 'none',
                         }}
-                        onMouseEnter={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.color = '#6366f1'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#475569'; }}
-                    >
-                        Records
-                    </div>
-                    <div
-                        style={{
-                            color: '#475569',
-                            fontWeight: 600,
-                            fontSize: '0.85rem',
-                            cursor: 'pointer',
-                            padding: '10px 16px',
-                            borderRadius: '8px',
-                            transition: 'all 0.2s',
-                        }}
-                        onMouseEnter={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.color = '#6366f1'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#475569'; }}
                     >
                         Members
-                    </div>
+                    </Link>
                 </div>
             )}
         </nav>

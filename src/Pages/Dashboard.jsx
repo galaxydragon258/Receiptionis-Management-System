@@ -422,7 +422,7 @@ export default function Dashboard() {
                             <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 4px' }}>
                                 <thead>
                                     <tr>
-                                        {['#', 'OR #', 'Date', 'Time', 'Member', 'Type', 'Amount', 'Created By'].map(h => (
+                                        {['#', 'OR #', 'Date', 'Time', 'Member', 'Type', 'Payment', 'Amount', 'Created By'].map(h => (
                                             <th
                                                 key={h}
                                                 style={{
@@ -486,6 +486,23 @@ export default function Dashboard() {
                                                     {r.type}
                                                 </span>
                                             </td>
+                                            <td style={{ padding: '12px 14px' }}>
+                                                <span style={{
+                                                    display: 'inline-block',
+                                                    padding: '3px 10px',
+                                                    borderRadius: 6,
+                                                    fontSize: '0.7rem',
+                                                    fontWeight: 600,
+                                                    background:
+                                                        r.paymentMethod === 'Cash' ? '#ecfdf5' :
+                                                        r.paymentMethod === 'GCash' ? '#eff6ff' : '#fef3c7',
+                                                    color:
+                                                        r.paymentMethod === 'Cash' ? '#10b981' :
+                                                        r.paymentMethod === 'GCash' ? '#2563eb' : '#d97706',
+                                                }}>
+                                                    {r.paymentMethod || 'Cash'}
+                                                </span>
+                                            </td>
                                             <td style={{ padding: '12px 14px', textAlign: 'right', fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>
                                                 {peso(r.amount)}
                                             </td>
@@ -497,7 +514,7 @@ export default function Dashboard() {
                                 </tbody>
                                 <tfoot>
                                     <tr style={{ borderTop: '2px solid #f1f5f9' }}>
-                                        <td colSpan={5} style={{ padding: '14px', fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>
+                                        <td colSpan={6} style={{ padding: '14px', fontSize: '0.82rem', fontWeight: 700, color: '#1e293b' }}>
                                             Total Sales Today
                                         </td>
                                         <td />
@@ -547,6 +564,21 @@ export default function Dashboard() {
                                                                 r.type === 'Walk-in' ? '#0ea5e9' : '#a855f7',
                                                     }}>
                                                         {r.type}
+                                                    </span>
+                                                    <span style={{
+                                                        display: 'inline-block',
+                                                        padding: '2px 8px',
+                                                        borderRadius: 5,
+                                                        fontSize: '0.65rem',
+                                                        fontWeight: 600,
+                                                        background:
+                                                            r.paymentMethod === 'Cash' ? '#ecfdf5' :
+                                                            r.paymentMethod === 'GCash' ? '#eff6ff' : '#fef3c7',
+                                                        color:
+                                                            r.paymentMethod === 'Cash' ? '#10b981' :
+                                                            r.paymentMethod === 'GCash' ? '#2563eb' : '#d97706',
+                                                    }}>
+                                                        {r.paymentMethod || 'Cash'}
                                                     </span>
                                                     {r.orNumber && (
                                                         <span style={{

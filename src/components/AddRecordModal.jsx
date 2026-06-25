@@ -8,13 +8,20 @@ const TYPE_OPTIONS = [
     { value: 'Personal Training', label: 'Personal Training', amount: 1200, color: '#a855f7', bg: '#fdf4ff' },
 ];
 
+const PAYMENT_METHOD_OPTIONS = [
+    { value: 'Cash', label: 'Cash', color: '#10b981', bg: '#ecfdf5' },
+    { value: 'GCash', label: 'GCash', color: '#2563eb', bg: '#eff6ff' },
+    { value: 'Bank Transfer', label: 'Bank Transfer', color: '#d97706', bg: '#fef3c7' },
+];
+
 function peso(n) {
     return '₱' + Number(n).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-export default function AddRecordModal({ isOpen, onClose, onAdd }) {
-    const [name, setName] = useState('');
-    const [type, setType] = useState('Monthly');
+export default function AddRecordModal({ isOpen, onClose, onAdd, initialName = '', initialType = 'Monthly' }) {
+    const [name, setName] = useState(initialName);
+    const [type, setType] = useState(initialType);
+    const [paymentMethod, setPaymentMethod] = useState('Cash');
     const [amount, setAmount] = useState();
     const [customAmount, setCustomAmount] = useState(false);
     const [orNumber, setOrNumber] = useState('');
@@ -42,9 +49,11 @@ export default function AddRecordModal({ isOpen, onClose, onAdd }) {
     // Focus the name input when modal opens
     useEffect(() => {
         if (isOpen) {
-            setName('');
-            setType('Monthly');
-            setAmount(2100);
+            setName(initialName);
+            setType(initialType);
+            setPaymentMethod('Cash');
+            const opt = TYPE_OPTIONS.find(o => o.value === initialType);
+            setAmount(opt ? opt.amount : 2100);
             setCustomAmount(false);
             setOrNumber('');
             const d = new Date();
@@ -57,7 +66,7 @@ export default function AddRecordModal({ isOpen, onClose, onAdd }) {
             setTimeout(() => nameRef.current?.focus(), 150);
             document.body.style.overflow = 'hidden';
         }
-    }, [isOpen]);
+    }, [isOpen, initialName, initialType]);
 
     function handleClose() {
         setClosing(true);
@@ -91,6 +100,7 @@ export default function AddRecordModal({ isOpen, onClose, onAdd }) {
         onAdd({
             member: name.trim(),
             type,
+            paymentMethod,
             amount: Number(amount),
             time: timeStr,
             orNumber: orNumber.trim(),
@@ -398,6 +408,70 @@ export default function AddRecordModal({ isOpen, onClose, onAdd }) {
                         )}
                     </div>
 
+                    {/* Payment Method Selector — pill buttons */}
+                    <div style={{ marginBottom: 20 }}>
+                        <label style={{
+                            display: 'block',
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            color: '#475569',
+                            marginBottom: 10,
+                            letterSpacing: '0.02em',
+                        }}>
+                            Payment Method
+                        </label>
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', flexDirection: isMobile ? 'column' : 'row' }}>
+                            {PAYMENT_METHOD_OPTIONS.map(opt => {
+                                const isActive = paymentMethod === opt.value;
+                                return (
+                                    <button
+                                        key={opt.value}
+                                        type="button"
+                                        onClick={() => setPaymentMethod(opt.value)}
+                                        style={{
+                                            padding: '10px 16px',
+                                            borderRadius: 10,
+                                            border: `1.5px solid ${isActive ? opt.color : '#e2e8f0'}`,
+                                            background: isActive ? opt.bg : 'white',
+                                            color: isActive ? opt.color : '#64748b',
+                                            fontSize: '0.78rem',
+                                            fontWeight: 600,
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s',
+                                            fontFamily: 'inherit',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 6,
+                                        }}
+                                        onMouseEnter={e => {
+                                            if (!isActive) {
+                                                e.currentTarget.style.borderColor = opt.color + '66';
+                                                e.currentTarget.style.background = opt.bg;
+                                            }
+                                        }}
+                                        onMouseLeave={e => {
+                                            if (!isActive) {
+                                                e.currentTarget.style.borderColor = '#e2e8f0';
+                                                e.currentTarget.style.background = 'white';
+                                            }
+                                        }}
+                                    >
+                                        {/* Indicator dot */}
+                                        <span style={{
+                                            width: 8,
+                                            height: 8,
+                                            borderRadius: '50%',
+                                            background: isActive ? opt.color : '#cbd5e1',
+                                            transition: 'background 0.2s',
+                                            flexShrink: 0,
+                                        }} />
+                                        {opt.label}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
                     {/* OR Number and Date */}
                     <div style={{ display: 'flex', gap: 16, marginBottom: 20, flexDirection: isMobile ? 'column' : 'row' }}>
                         {/* OR Number */}
@@ -569,6 +643,17 @@ export default function AddRecordModal({ isOpen, onClose, onAdd }) {
                                             color: selectedType?.color || '#94a3b8',
                                         }}>
                                             {type}
+                                        </span>
+                                        <span style={{
+                                            display: 'inline-block',
+                                            padding: '1px 8px',
+                                            borderRadius: 5,
+                                            fontSize: '0.65rem',
+                                            fontWeight: 600,
+                                            background: PAYMENT_METHOD_OPTIONS.find(o => o.value === paymentMethod)?.bg || '#ecfdf5',
+                                            color: PAYMENT_METHOD_OPTIONS.find(o => o.value === paymentMethod)?.color || '#10b981',
+                                        }}>
+                                            {paymentMethod}
                                         </span>
                                         {orNumber.trim() && (
                                             <span style={{ fontSize: '0.68rem', color: '#64748b', background: '#e2e8f0', padding: '1px 6px', borderRadius: 4, fontWeight: 500 }}>

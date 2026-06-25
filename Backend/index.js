@@ -40,9 +40,20 @@ async function connectToDatabase() {
 }
 
 // Proactively connect on startup (will fail silently or print log if offline/unconfigured)
-connectToDatabase().catch(err => {
-    console.error('❌ Initial MongoDB startup connection failed:', err.message);
-});
+connectToDatabase()
+    .then(async () => {
+        try {
+            const result = await seedDatabase(false);
+            if (result.count > 0) {
+                console.log(`ℹ️ [Database Auto-Seeder] Seeded ${result.count} records automatically.`);
+            }
+        } catch (seedErr) {
+            console.error('❌ Failed to run database auto-seeder:', seedErr.message);
+        }
+    })
+    .catch(err => {
+        console.error('❌ Initial MongoDB startup connection failed:', err.message);
+    });
 
 // Middleware to ensure DB is connected before handling any requests
 app.use(async (req, res, next) => {
@@ -60,6 +71,7 @@ const recordSchema = new mongoose.Schema({
     time: { type: String, required: true },
     member: { type: String, required: true },
     type: { type: String, required: true },
+    paymentMethod: { type: String, default: 'Cash' },
     amount: { type: Number, required: true },
     orNumber: { type: String, default: '' },
     date: { type: String, default: '' },
@@ -76,6 +88,104 @@ recordSchema.virtual('id').get(function () {
 });
 
 const ReyesGymRecords = mongoose.model('Record', recordSchema);
+
+// Helper to seed database with realistic check-in records
+async function seedDatabase(clearBeforeSeed = false) {
+    if (clearBeforeSeed) {
+        await ReyesGymRecords.deleteMany({});
+    }
+
+    const count = await ReyesGymRecords.countDocuments();
+    if (count > 0 && !clearBeforeSeed) {
+        return { count, message: 'Database already has records.' };
+    }
+
+    const FIRST_NAMES = ['Juan', 'Maria', 'Pedro', 'Ana', 'Jose', 'Manuel', 'Carlos', 'Teresa', 'David', 'Lourdes', 'John', 'Sarah', 'Michael', 'Emma', 'Robert', 'Olivia', 'William', 'Sophia', 'Richard', 'Isabella'];
+    const LAST_NAMES = ['Dela Cruz', 'Santos', 'Reyes', 'Gonzales', 'Bautista', 'Garcia', 'Cruz', 'Flores', 'Mendoza', 'Aquino', 'Ramos', 'Castro', 'Perez', 'Villanueva', 'Santiago', 'Smith', 'Johnson', 'Brown', 'Davis', 'Wilson'];
+    const TYPES = ['Monthly', 'Walk-in', 'Personal Training'];
+    const METHODS = ['Cash', 'GCash', 'Bank Transfer'];
+    const CREATORS = ['admin', 'receptionist_mark', 'receptionist_jen'];
+
+    const recordsToInsert = [];
+    const uniqueNames = new Set();
+    
+    // Generate ~45 unique member names
+    while (uniqueNames.size < 45) {
+        const fn = FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)];
+        const ln = LAST_NAMES[Math.floor(Math.random() * LAST_NAMES.length)];
+        uniqueNames.add(`${fn} ${ln}`);
+    }
+
+    const memberNames = Array.from(uniqueNames);
+    const today = new Date();
+
+    memberNames.forEach((member, index) => {
+        // Assign a membership category to this member to ensure all states are covered
+        // 0-14: Active (paid 1-20 days ago)
+        // 15-24: Expiring Soon (paid 23-29 days ago)
+        // 25-34: Expired (paid 31-60 days ago)
+        // 35-44: Walk-ins (day pass, paid 0-5 days ago)
+        
+        let statusCategory = 'active';
+        if (index >= 15 && index < 25) statusCategory = 'expiring';
+        else if (index >= 25 && index < 35) statusCategory = 'expired';
+        else if (index >= 35) statusCategory = 'walkin';
+
+        const type = statusCategory === 'walkin' ? 'Walk-in' : (Math.random() > 0.3 ? 'Monthly' : 'Personal Training');
+        const paymentMethod = METHODS[Math.floor(Math.random() * METHODS.length)];
+        const createdBy = CREATORS[Math.floor(Math.random() * CREATORS.length)];
+        const amount = type === 'Monthly' ? 2100 : type === 'Walk-in' ? 500 : 1200;
+        const time = `${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')} ${Math.random() > 0.5 ? 'AM' : 'PM'}`;
+
+        let daysAgo = 0;
+        if (statusCategory === 'active') {
+            daysAgo = Math.floor(Math.random() * 20) + 1; // 1 to 20 days ago
+        } else if (statusCategory === 'expiring') {
+            daysAgo = Math.floor(Math.random() * 7) + 23; // 23 to 29 days ago
+        } else if (statusCategory === 'expired') {
+            daysAgo = Math.floor(Math.random() * 30) + 31; // 31 to 60 days ago
+        } else {
+            daysAgo = Math.floor(Math.random() * 5); // 0 to 4 days ago
+        }
+
+        const recordDate = new Date(today);
+        recordDate.setDate(today.getDate() - daysAgo);
+
+        // Sometimes add historical records for the same member to show history
+        if (statusCategory !== 'walkin' && Math.random() > 0.4) {
+            // Add a previous payment 35 days prior to the latest payment
+            const prevDate = new Date(recordDate);
+            prevDate.setDate(recordDate.getDate() - 35);
+            
+            recordsToInsert.push({
+                time: '10:15 AM',
+                member,
+                type,
+                paymentMethod: METHODS[Math.floor(Math.random() * METHODS.length)],
+                amount,
+                orNumber: `OR-${Math.floor(Math.random() * 90000) + 10000}`,
+                date: prevDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+                createdBy: CREATORS[Math.floor(Math.random() * CREATORS.length)],
+                createdAt: prevDate
+            });
+        }
+
+        recordsToInsert.push({
+            time,
+            member,
+            type,
+            paymentMethod,
+            amount,
+            orNumber: `OR-${Math.floor(Math.random() * 90000) + 10000}`,
+            date: recordDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+            createdBy,
+            createdAt: recordDate
+        });
+    });
+
+    await ReyesGymRecords.insertMany(recordsToInsert);
+    return { count: recordsToInsert.length, message: 'Successfully seeded database.' };
+}
 
 // Aggregate daily records into monthly breakdown stats
 const getMonthlyData = async () => {
@@ -151,7 +261,7 @@ app.get('/api/records', async (req, res) => {
 
 // 3. Add a new record
 app.post('/api/records', async (req, res) => {
-    const { member, type, amount, time, orNumber, date, createdBy } = req.body;
+    const { member, type, paymentMethod, amount, time, orNumber, date, createdBy } = req.body;
 
     // Simple validation
     if (!member || !type || amount === undefined) {
@@ -165,6 +275,7 @@ app.post('/api/records', async (req, res) => {
             time: recordTime,
             member: String(member).trim(),
             type: String(type).trim(),
+            paymentMethod: paymentMethod ? String(paymentMethod).trim() : 'Cash',
             amount: Number(amount),
             orNumber: orNumber ? String(orNumber).trim() : '',
             date: recordDate,
@@ -183,6 +294,18 @@ app.post('/api/records', async (req, res) => {
 app.get('/api/monthly-data', async (req, res) => {
     const data = await getMonthlyData();
     res.json(data);
+});
+
+// 5. Seed database
+app.post('/api/seed', async (req, res) => {
+    try {
+        const clear = req.query.clear === 'true' || req.body?.clear === true;
+        const result = await seedDatabase(clear);
+        res.json(result);
+    } catch (error) {
+        console.error('Error seeding database:', error);
+        res.status(500).json({ error: 'Failed to seed database: ' + error.message });
+    }
 });
 
 // Start server locally (if not running in Serverless environment like Vercel)
