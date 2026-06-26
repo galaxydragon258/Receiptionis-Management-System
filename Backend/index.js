@@ -255,6 +255,7 @@ app.get('/api/records', async (req, res) => {
     try {
         const records = await ReyesGymRecords.find().sort({ createdAt: 1 });
         res.json(records);
+        console.log(records)
     } catch (error) {
         console.error('Error fetching records:', error);
         res.status(500).json({ error: 'Failed to fetch records from database' });

@@ -83,11 +83,17 @@ export default function Dashboard() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(record)
             });
+
             if (!res.ok) {
                 const errorData = await res.json();
                 throw new Error(errorData.error || 'Failed to save record to database');
             }
+
             const savedRecord = await res.json();
+
+
+
+            console.log(savedRecord)
             setDailyRecords(prev => [...prev, savedRecord]);
         } catch (err) {
             console.error('Error saving record:', err);
@@ -95,13 +101,24 @@ export default function Dashboard() {
         }
     }, []);
 
-    // calculate totals
-    const totalSalesToday = dailyRecords.reduce((s, r) => s + r.amount, 0);
+    console.log(dailyRecords)
+
+    // Filter records for today's date
+    const todayString = useMemo(() => formatDate(today), [today]);
+    const todayRecords = useMemo(() => {
+        return dailyRecords.filter(r => {
+            const rDateStr = r.date || (r.createdAt ? formatDate(new Date(r.createdAt)) : '');
+            return rDateStr === todayString;
+        });
+    }, [dailyRecords, todayString]);
+
+    // calculate totals based on today's filtered records
+    const totalSalesToday = useMemo(() => todayRecords.reduce((s, r) => s + r.amount, 0), [todayRecords]);
+    const walkInCount = useMemo(() => todayRecords.filter(r => r.type === 'Walk-in').length, [todayRecords]);
+    const memberCount = useMemo(() => todayRecords.filter(r => r.type === 'Monthly').length, [todayRecords]);
 
     const totalSalesMonth = monthlyData.reduce((s, d) => s + d.sales, 0);
     const totalMembersMonth = monthlyData.reduce((s, d) => s + d.members, 0);
-    const walkInCount = dailyRecords.filter(r => r.type === 'Walk-in').length;
-    const memberCount = dailyRecords.filter(r => r.type === 'Monthly').length;
 
     return (
         <div style={{ minHeight: '100vh', background: '#f8f9fc' }}>
@@ -299,7 +316,7 @@ export default function Dashboard() {
                         icon={<svg width={isSmallMobile ? 16 : 22} height={isSmallMobile ? 16 : 22} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>}
                         label="Total Sales Today"
                         value={peso(totalSalesToday)}
-                        sub={`${dailyRecords.length} transactions today`}
+                        sub={`${todayRecords.length} transactions today`}
                         accent="indigo"
                         delay={1}
                         isMobile={isMobile}
@@ -318,7 +335,7 @@ export default function Dashboard() {
                     <StatCard
                         icon={<svg width={isSmallMobile ? 16 : 22} height={isSmallMobile ? 16 : 22} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>}
                         label="Records Today"
-                        value={dailyRecords.length}
+                        value={todayRecords.length}
                         sub={`Walk-ins: ${walkInCount} · Members: ${memberCount}`}
                         accent="sky"
                         delay={3}
@@ -413,7 +430,7 @@ export default function Dashboard() {
                                 fontSize: '0.72rem',
                                 fontWeight: 600,
                             }}>
-                                {dailyRecords.length} Records
+                                {todayRecords.length} Records
                             </span>
                         </div>
 
@@ -442,7 +459,7 @@ export default function Dashboard() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {dailyRecords.map((r, idx) => (
+                                    {todayRecords.map((r, idx) => (
                                         <tr
                                             key={r.id}
                                             style={{
@@ -530,7 +547,7 @@ export default function Dashboard() {
                         {/* Mobile Card List — shown on mobile only */}
                         {isMobile && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                {dailyRecords.map((r) => (
+                                {todayRecords.map((r) => (
                                     <div
                                         key={r.id}
                                         style={{
@@ -669,10 +686,10 @@ export default function Dashboard() {
                                 { type: 'Walk-in', color: '#0ea5e9', bg: '#f0f9ff' },
                                 { type: 'Personal Training', color: '#a855f7', bg: '#fdf4ff' },
                             ].map(cat => {
-                                const amount = dailyRecords
+                                const amount = todayRecords
                                     .filter(r => r.type === cat.type)
                                     .reduce((s, r) => s + r.amount, 0);
-                                const count = dailyRecords.filter(r => r.type === cat.type).length;
+                                const count = todayRecords.filter(r => r.type === cat.type).length;
                                 const pct = totalSalesToday > 0 ? (amount / totalSalesToday) * 100 : 0;
 
                                 return (
@@ -742,7 +759,7 @@ export default function Dashboard() {
                                 justifyContent: isSmallMobile ? 'space-between' : 'flex-start',
                             }}>
                                 <div style={{ flex: isSmallMobile ? '1' : 'none', textAlign: isSmallMobile ? 'center' : 'left' }}>
-                                    <p style={{ fontSize: isSmallMobile ? '0.95rem' : '1.1rem', fontWeight: 800 }}>{dailyRecords.length}</p>
+                                    <p style={{ fontSize: isSmallMobile ? '0.95rem' : '1.1rem', fontWeight: 800 }}>{todayRecords.length}</p>
                                     <p style={{ fontSize: '0.68rem', opacity: 0.7, fontWeight: 500, whiteSpace: 'nowrap' }}>Transactions</p>
                                 </div>
                                 {!isSmallMobile && <div style={{ width: 1, background: 'rgba(255,255,255,0.2)' }} />}
