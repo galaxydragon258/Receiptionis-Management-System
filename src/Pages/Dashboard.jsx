@@ -495,10 +495,10 @@ export default function Dashboard() {
                                                     fontWeight: 600,
                                                     background:
                                                         r.paymentMethod === 'Cash' ? '#ecfdf5' :
-                                                        r.paymentMethod === 'GCash' ? '#eff6ff' : '#fef3c7',
+                                                            r.paymentMethod === 'GCash' ? '#eff6ff' : '#fef3c7',
                                                     color:
                                                         r.paymentMethod === 'Cash' ? '#10b981' :
-                                                        r.paymentMethod === 'GCash' ? '#2563eb' : '#d97706',
+                                                            r.paymentMethod === 'GCash' ? '#2563eb' : '#d97706',
                                                 }}>
                                                     {r.paymentMethod || 'Cash'}
                                                 </span>
@@ -573,10 +573,10 @@ export default function Dashboard() {
                                                         fontWeight: 600,
                                                         background:
                                                             r.paymentMethod === 'Cash' ? '#ecfdf5' :
-                                                            r.paymentMethod === 'GCash' ? '#eff6ff' : '#fef3c7',
+                                                                r.paymentMethod === 'GCash' ? '#eff6ff' : '#fef3c7',
                                                         color:
                                                             r.paymentMethod === 'Cash' ? '#10b981' :
-                                                            r.paymentMethod === 'GCash' ? '#2563eb' : '#d97706',
+                                                                r.paymentMethod === 'GCash' ? '#2563eb' : '#d97706',
                                                     }}>
                                                         {r.paymentMethod || 'Cash'}
                                                     </span>

@@ -116,6 +116,22 @@ export default function Navbar() {
                             >
                                 Members
                             </Link>
+                            <Link
+                                to="/sales"
+                                style={{
+                                    color: location.pathname === '/sales' ? '#6366f1' : '#475569',
+                                    fontWeight: 600,
+                                    fontSize: '0.8rem',
+                                    cursor: 'pointer',
+                                    padding: '8px 16px',
+                                    borderRadius: '8px',
+                                    background: location.pathname === '/sales' ? '#f5f3ff' : 'transparent',
+                                    transition: 'all 0.2s',
+                                    textDecoration: 'none',
+                                }}
+                            >
+                                Sales Record
+                            </Link>
                         </nav>
                     </div>
                 )}
@@ -268,6 +284,23 @@ export default function Navbar() {
                         }}
                     >
                         Members
+                    </Link>
+                    <Link
+                        to="/sales"
+                        onClick={() => setIsOpen(false)}
+                        style={{
+                            color: location.pathname === '/sales' ? '#6366f1' : '#475569',
+                            fontWeight: 600,
+                            fontSize: '0.85rem',
+                            cursor: 'pointer',
+                            padding: '10px 16px',
+                            borderRadius: '8px',
+                            background: location.pathname === '/sales' ? '#f5f3ff' : 'transparent',
+                            transition: 'all 0.2s',
+                            textDecoration: 'none',
+                        }}
+                    >
+                        Sales Record
                     </Link>
                 </div>
             )}

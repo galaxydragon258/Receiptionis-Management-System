@@ -7,7 +7,6 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const MONGODB_URI = process.env.MONGODB_URI || '';
 console.log("PORT", PORT)
-console.log("MONGODB_URI", MONGODB_URI)
 // Enable CORS for frontend integration
 app.use(cors());
 app.use(express.json());
@@ -87,6 +86,9 @@ recordSchema.virtual('id').get(function () {
     return this._id.toHexString();
 });
 
+// TTL index to automatically delete records older than 2 months (60 days)
+recordSchema.index({ createdAt: 1 }, { expireAfterSeconds: 5184000 });
+
 const ReyesGymRecords = mongoose.model('Record', recordSchema);
 
 // Helper to seed database with realistic check-in records
@@ -108,7 +110,7 @@ async function seedDatabase(clearBeforeSeed = false) {
 
     const recordsToInsert = [];
     const uniqueNames = new Set();
-    
+
     // Generate ~45 unique member names
     while (uniqueNames.size < 45) {
         const fn = FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)];
@@ -125,7 +127,7 @@ async function seedDatabase(clearBeforeSeed = false) {
         // 15-24: Expiring Soon (paid 23-29 days ago)
         // 25-34: Expired (paid 31-60 days ago)
         // 35-44: Walk-ins (day pass, paid 0-5 days ago)
-        
+
         let statusCategory = 'active';
         if (index >= 15 && index < 25) statusCategory = 'expiring';
         else if (index >= 25 && index < 35) statusCategory = 'expired';
@@ -143,7 +145,7 @@ async function seedDatabase(clearBeforeSeed = false) {
         } else if (statusCategory === 'expiring') {
             daysAgo = Math.floor(Math.random() * 7) + 23; // 23 to 29 days ago
         } else if (statusCategory === 'expired') {
-            daysAgo = Math.floor(Math.random() * 30) + 31; // 31 to 60 days ago
+            daysAgo = Math.floor(Math.random() * 14) + 31; // 31 to 44 days ago
         } else {
             daysAgo = Math.floor(Math.random() * 5); // 0 to 4 days ago
         }
@@ -152,11 +154,11 @@ async function seedDatabase(clearBeforeSeed = false) {
         recordDate.setDate(today.getDate() - daysAgo);
 
         // Sometimes add historical records for the same member to show history
-        if (statusCategory !== 'walkin' && Math.random() > 0.4) {
-            // Add a previous payment 35 days prior to the latest payment
+        if ((statusCategory === 'active' || statusCategory === 'expiring') && Math.random() > 0.4) {
+            // Add a previous payment 20 days prior to the latest payment
             const prevDate = new Date(recordDate);
-            prevDate.setDate(recordDate.getDate() - 35);
-            
+            prevDate.setDate(recordDate.getDate() - 20);
+
             recordsToInsert.push({
                 time: '10:15 AM',
                 member,

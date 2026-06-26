@@ -3,9 +3,11 @@ import useMediaQuery from '../hooks/useMediaQuery';
 import { formatDate } from '../utils/utility';
 
 const TYPE_OPTIONS = [
-    { value: 'Monthly', label: 'Monthly Membership', amount: 2100, color: '#6366f1', bg: '#eef2ff' },
+    { value: 'Monthly', label: 'Basic Membership', amount: 2100, color: '#6366f1', bg: '#eef2ff' },
+    { value: 'Premium', label: 'Premium Membership', amount: 3600, color: '#10b981', bg: '#ecfdf5' },
     { value: 'Walk-in', label: 'Walk-in / Day Pass', amount: 500, color: '#0ea5e9', bg: '#f0f9ff' },
     { value: 'Personal Training', label: 'Personal Training', amount: 1200, color: '#a855f7', bg: '#fdf4ff' },
+
 ];
 
 const PAYMENT_METHOD_OPTIONS = [
