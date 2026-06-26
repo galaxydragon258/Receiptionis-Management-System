@@ -78,6 +78,7 @@ export default function Dashboard() {
 
     const handleAddRecord = useCallback(async (record) => {
         try {
+            console.log(record)
             const res = await fetch(`${API_BASE_URL}/records`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -101,7 +102,6 @@ export default function Dashboard() {
         }
     }, []);
 
-    console.log(dailyRecords)
 
     // Filter records for today's date
     const todayString = useMemo(() => formatDate(today), [today]);

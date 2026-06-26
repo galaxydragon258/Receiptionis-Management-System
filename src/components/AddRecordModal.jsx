@@ -94,10 +94,6 @@ export default function AddRecordModal({ isOpen, onClose, onAdd, initialName = '
         });
 
         let finalDate = '';
-        if (recordDate) {
-            const parsedDate = new Date(recordDate + 'T00:00:00');
-            finalDate = formatDate(parsedDate);
-        }
 
         onAdd({
             member: name.trim(),
@@ -518,45 +514,7 @@ export default function AddRecordModal({ isOpen, onClose, onAdd, initialName = '
                         </div>
 
                         {/* Date */}
-                        <div style={{ flex: 1 }}>
-                            <label style={{
-                                display: 'block',
-                                fontSize: '0.75rem',
-                                fontWeight: 600,
-                                color: '#475569',
-                                marginBottom: 8,
-                                letterSpacing: '0.02em',
-                            }}>
-                                Date
-                            </label>
-                            <input
-                                type="date"
-                                value={recordDate}
-                                onChange={e => setRecordDate(e.target.value)}
-                                required
-                                style={{
-                                    width: '100%',
-                                    padding: '12px 16px',
-                                    borderRadius: 12,
-                                    border: '1.5px solid #e2e8f0',
-                                    fontSize: '0.88rem',
-                                    fontWeight: 500,
-                                    color: '#1e293b',
-                                    outline: 'none',
-                                    transition: 'border-color 0.2s, box-shadow 0.2s',
-                                    background: '#fafbff',
-                                    fontFamily: 'inherit',
-                                }}
-                                onFocus={e => {
-                                    e.target.style.borderColor = '#a5b4fc';
-                                    e.target.style.boxShadow = '0 0 0 3px rgba(99,102,241,0.1)';
-                                }}
-                                onBlur={e => {
-                                    e.target.style.borderColor = '#e2e8f0';
-                                    e.target.style.boxShadow = 'none';
-                                }}
-                            />
-                        </div>
+
                     </div>
 
                     {/* Created By / Receptionist */}
