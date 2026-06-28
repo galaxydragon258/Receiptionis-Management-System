@@ -4,10 +4,7 @@ import AddRecordModal from '../components/AddRecordModal';
 import useMediaQuery from '../hooks/useMediaQuery';
 import { formatDate, peso } from '../utils/utility';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||
-    (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-        ? 'http://localhost:5000/api'
-        : 'https://receiptionis-management-system-kydk.vercel.app/api');
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 export default function MembershipRecords() {
     const [records, setRecords] = useState([]);
@@ -16,7 +13,7 @@ export default function MembershipRecords() {
 
     const [searchQuery, setSearchQuery] = useState('');
     const [activeTab, setActiveTab] = useState('All'); // 'All', 'Active', 'Expiring Soon', 'Expired', 'New'
-    
+
     // Renewal Modal State
     const [modalOpen, setModalOpen] = useState(false);
     const [renewName, setRenewName] = useState('');
@@ -96,7 +93,7 @@ export default function MembershipRecords() {
 
         Object.keys(memberMap).forEach(name => {
             const mRecords = memberMap[name].sort((a, b) => parseRecordDate(b) - parseRecordDate(a));
-            
+
             // Separate Monthly/PT membership records from Walk-in records
             const membershipRecords = mRecords.filter(r => r.type === 'Monthly' || r.type === 'Personal Training');
             const walkinRecords = mRecords.filter(r => r.type === 'Walk-in');
@@ -183,7 +180,7 @@ export default function MembershipRecords() {
     // Statistics computation
     const stats = useMemo(() => {
         const membersOnly = computedMembers.filter(m => !m.isWalkInOnly);
-        
+
         const total = membersOnly.length;
         const active = membersOnly.filter(m => m.status === 'Active').length;
         const expiring = membersOnly.filter(m => m.status === 'Expiring Soon').length;
@@ -198,7 +195,7 @@ export default function MembershipRecords() {
     const filteredMembers = useMemo(() => {
         return computedMembers.filter(m => {
             const matchesSearch = m.name.toLowerCase().includes(searchQuery.toLowerCase());
-            
+
             let matchesTab = true;
             if (activeTab === 'All') matchesTab = !m.isWalkInOnly;
             else if (activeTab === 'Active') matchesTab = !m.isWalkInOnly && m.status === 'Active';
@@ -222,7 +219,7 @@ export default function MembershipRecords() {
     const getProgressPercent = (member) => {
         if (member.status === 'Expired') return 0;
         if (member.latestRecord?.type === 'Walk-in') return 100;
-        
+
         const totalDuration = 30; // Monthly / PT
         const remaining = Math.max(0, Math.min(totalDuration, member.remainingDays));
         return Math.round((remaining / totalDuration) * 100);
@@ -233,7 +230,7 @@ export default function MembershipRecords() {
             <Navbar />
 
             <main style={{ maxWidth: 1280, margin: '0 auto', padding: isMobile ? '12px 10px 40px' : isTablet ? '16px 12px 48px' : '24px 16px 60px' }}>
-                
+
                 {/* ─── Error Alert Banner ─── */}
                 {error && (
                     <div style={{
@@ -664,8 +661,8 @@ export default function MembershipRecords() {
                                                     height: 44,
                                                     borderRadius: 14,
                                                     background: member.status === 'Active' ? 'linear-gradient(135deg, #3b82f6, #6366f1)' :
-                                                                member.status === 'Expiring Soon' ? 'linear-gradient(135deg, #f59e0b, #d97706)' :
-                                                                'linear-gradient(135deg, #ef4444, #b91c1c)',
+                                                        member.status === 'Expiring Soon' ? 'linear-gradient(135deg, #f59e0b, #d97706)' :
+                                                            'linear-gradient(135deg, #ef4444, #b91c1c)',
                                                     display: 'flex',
                                                     alignItems: 'center',
                                                     justifyContent: 'center',
@@ -748,7 +745,7 @@ export default function MembershipRecords() {
                                                     <span style={{ color: '#64748b', fontWeight: 500 }}>Time Period Progress</span>
                                                     <span style={{
                                                         color: member.status === 'Expired' ? '#f43f5e' :
-                                                               member.status === 'Expiring Soon' ? '#d97706' : '#10b981',
+                                                            member.status === 'Expiring Soon' ? '#d97706' : '#10b981',
                                                         fontWeight: 700
                                                     }}>
                                                         {member.status === 'Expired' ? 'Expired' : `${member.remainingDays} days remaining`}
@@ -759,7 +756,7 @@ export default function MembershipRecords() {
                                                         height: '100%',
                                                         width: `${progress}%`,
                                                         background: member.status === 'Expiring Soon' ? 'linear-gradient(90deg, #f59e0b, #d97706)' :
-                                                                    'linear-gradient(90deg, #10b981, #059669)',
+                                                            'linear-gradient(90deg, #10b981, #059669)',
                                                         borderRadius: 100,
                                                         transition: 'width 0.5s ease',
                                                     }} />
@@ -990,7 +987,7 @@ export default function MembershipRecords() {
                                                     <span>OR: {log.orNumber || '—'}</span>
                                                     <span>Method: {log.paymentMethod || 'Cash'}</span>
                                                 </div>
-                                                
+
                                                 <div style={{ fontSize: '0.68rem', color: '#94a3b8', marginTop: 4 }}>
                                                     Logged by: {log.createdBy || 'admin'}
                                                 </div>

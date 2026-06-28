@@ -112,6 +112,8 @@ export default function Dashboard() {
         });
     }, [dailyRecords, todayString]);
 
+
+
     // calculate totals based on today's filtered records
     const totalSalesToday = useMemo(() => todayRecords.reduce((s, r) => s + r.amount, 0), [todayRecords]);
     const walkInCount = useMemo(() => todayRecords.filter(r => r.type === 'Walk-in').length, [todayRecords]);
