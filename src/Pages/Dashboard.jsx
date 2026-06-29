@@ -6,8 +6,8 @@ import MonthlyChart from '../components/MonthlyChart';
 import { MONTHS, DAYS_SHORT } from '../assets/Data/DatesData';
 import { formatDate, formatTime, peso } from '../utils/utility';
 import StatCard from '../components/StatCard';
-import generateMonthlyBreakdown from '../assets/DataComputation/DataComputation';
-
+import { useQuery } from '@tanstack/react-query';
+import { getDailyData } from '../../api/api,';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||
     (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
@@ -19,8 +19,16 @@ export default function Dashboard() {
     const today = useMemo(() => new Date(), []);
     const [modalOpen, setModalOpen] = useState(false);
 
+
+
     const isMobile = useMediaQuery('(max-width: 768px)');
     const isSmallMobile = useMediaQuery('(max-width: 480px)');
+
+    const { data, isLoading, error } = useQuery({
+        queryKey: ['daily-records'],
+        queryFn: getDailyData
+
+    })
 
     // live clock
     useEffect(() => {
@@ -29,53 +37,6 @@ export default function Dashboard() {
     }, []);
 
     const [dailyRecords, setDailyRecords] = useState([]);
-    const [monthlyData, setMonthlyData] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-
-    // Fetch data from MongoDB
-    useEffect(() => {
-        let isMounted = true;
-        async function fetchData() {
-            setLoading(true);
-            setError(null);
-            try {
-                const [recordsRes, monthlyRes] = await Promise.all([
-                    fetch(`${API_BASE_URL}/records`),
-                    fetch(`${API_BASE_URL}/monthly-data`)
-                ]);
-
-                if (!recordsRes.ok) {
-                    throw new Error('Failed to fetch records from database server');
-                }
-                if (!monthlyRes.ok) {
-                    throw new Error('Failed to fetch monthly breakdown stats');
-                }
-                const recordsData = await recordsRes.json();
-                const monthlyDataVal = await monthlyRes.json();
-                if (isMounted) {
-                    console.log(monthlyDataVal)
-                    setDailyRecords(recordsData);
-                    setMonthlyData(monthlyDataVal);
-                    setLoading(false);
-                }
-            } catch (err) {
-                console.error('Error loading data:', err);
-                console.log(err)
-                if (isMounted) {
-                    setError('Unable to load database records. Please verify that your Backend server is running and database configurations in .env are correct.');
-                    setLoading(false);
-                }
-            }
-        }
-        fetchData();
-        return () => {
-            isMounted = false;
-        };
-    }, []);
-
-
-
     const handleAddRecord = useCallback(async (record) => {
         try {
             console.log(record)
@@ -86,8 +47,8 @@ export default function Dashboard() {
             });
 
             if (!res.ok) {
-                const errorData = await res.json();
-                throw new Error(errorData.error || 'Failed to save record to database');
+                const errorsData = await res.json();
+                throw new errors(errorsData.errors || 'Failed to save record to database');
             }
 
             const savedRecord = await res.json();
@@ -97,8 +58,8 @@ export default function Dashboard() {
             console.log(savedRecord)
             setDailyRecords(prev => [...prev, savedRecord]);
         } catch (err) {
-            console.error('Error saving record:', err);
-            alert(`Error saving record: ${err.message}`);
+            console.errors('errors saving record:', err);
+            alert(`errors saving record: ${err.message}`);
         }
     }, []);
 
@@ -128,8 +89,8 @@ export default function Dashboard() {
 
             <main style={{ maxWidth: 1280, margin: '0 auto', padding: isSmallMobile ? '12px 10px 40px' : isMobile ? '16px 12px 48px' : '24px 16px 60px' }}>
 
-                {/* ─── Error Alert Banner ─── */}
-                {error && (
+                {/* ─── errors Alert Banner ─── */}
+                {errors && (
                     <div style={{
                         background: '#fef2f2',
                         border: '1.5px solid #fca5a5',
@@ -148,7 +109,7 @@ export default function Dashboard() {
                                 <line x1="12" y1="8" x2="12" y2="12" />
                                 <line x1="12" y1="16" x2="12.01" y2="16" />
                             </svg>
-                            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#991b1b' }}>{error}</span>
+                            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#991b1b' }}>{errors}</span>
                         </div>
                         <button
                             onClick={() => window.location.reload()}

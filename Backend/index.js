@@ -12,9 +12,7 @@ app.use(express.json());
 const route = express.Router();
 
 const { getDailyData } = require("./src/Analytics/dailyRecords.route");
-const { ReyesGymRecords } = require('./src/model/recordSchema.model.js');
 const { connectToDatabase } = require('./src/config/db.js');
-const { formatDate, formatTime } = require('./src/utils/utility.js')
 const { getMonthlyData } = require('./src/Analytics/analytics.js')
 const { addMember } = require('./src/Members/members.route.js')
 
@@ -31,15 +29,10 @@ app.use(async (req, res, next) => {
     }
 });
 
-// 2. Fetch daily receptionist records
 app.get('/api/records', getDailyData)
-
 app.post('/api/records', addMember)
-
-// 4. Fetch monthly stats
 app.get('/api/monthly-data', getMonthlyData);
 
-// Start server locally (if not running in Serverless environment like Vercel)
 if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
     app.listen(PORT, () => {
         console.log(`[GymFlow Test Backend] Running on http://localhost:${PORT}`);

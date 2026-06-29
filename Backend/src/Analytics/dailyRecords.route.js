@@ -1,5 +1,4 @@
 const { ReyesGymRecords } = require("../model/recordSchema.model");
-
 const getDailyData = async (req, res) => {
     try {
         const data = await ReyesGymRecords.find().sort({ createdAt: 1 });
@@ -11,6 +10,7 @@ const getDailyData = async (req, res) => {
     }
 
 }
+
 
 module.exports = { getDailyData }
 
