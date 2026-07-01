@@ -19,7 +19,9 @@ export default function Navbar() {
                 backdropFilter: 'blur(16px)',
                 WebkitBackdropFilter: 'blur(16px)',
                 borderBottom: '1px solid #e5e7eb',
-                padding: isMobile ? '0 12px' : '0 24px',
+                padding: isMobile ? '0 12px' : 
+                '0 24px',
+                
             }}
         >
             <div
