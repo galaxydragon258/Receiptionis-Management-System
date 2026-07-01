@@ -13,7 +13,10 @@ const TYPE_OPTIONS = [
 const PAYMENT_METHOD_OPTIONS = [
     { value: 'Cash', label: 'Cash', color: '#10b981', bg: '#ecfdf5' },
     { value: 'GCash', label: 'GCash', color: '#2563eb', bg: '#eff6ff' },
+    { value: 'BPI', label: 'BPI', color: '#dc2626', bg: '#fef2f2' },
+    { value: 'Maya', label: 'Maya', color: '#a855f7', bg: '#fdf4ff' },
     { value: 'Bank Transfer', label: 'Bank Transfer', color: '#d97706', bg: '#fef3c7' },
+    { value: 'Custom', label: 'Other (Custom)', color: '#64748b', bg: '#f1f5f9' },
 ];
 
 function peso(n) {
@@ -23,8 +26,8 @@ function peso(n) {
 export default function AddRecordModal({ isOpen, onClose, onAdd, initialName = '', initialType = 'Monthly' }) {
     const [name, setName] = useState(initialName);
     const [type, setType] = useState(initialType);
-    const [paymentMethod, setPaymentMethod] = useState('Cash');
-    const [amount, setAmount] = useState();
+    const [payments, setPayments] = useState([{ method: 'Cash', customMethod: '', amount: 2100 }]);
+    const [amount, setAmount] = useState(2100);
     const [customAmount, setCustomAmount] = useState(false);
     const [orNumber, setOrNumber] = useState('');
 
@@ -44,7 +47,10 @@ export default function AddRecordModal({ isOpen, onClose, onAdd, initialName = '
     useEffect(() => {
         if (!customAmount) {
             const opt = TYPE_OPTIONS.find(o => o.value === type);
-            if (opt) setAmount(opt.amount);
+            if (opt) {
+                setAmount(opt.amount);
+                setPayments([{ method: 'Cash', customMethod: '', amount: opt.amount }]);
+            }
         }
     }, [type, customAmount]);
 
@@ -53,9 +59,10 @@ export default function AddRecordModal({ isOpen, onClose, onAdd, initialName = '
         if (isOpen) {
             setName(initialName);
             setType(initialType);
-            setPaymentMethod('Cash');
             const opt = TYPE_OPTIONS.find(o => o.value === initialType);
-            setAmount(opt ? opt.amount : 2100);
+            const defaultAmt = opt ? opt.amount : 2100;
+            setAmount(defaultAmt);
+            setPayments([{ method: 'Cash', customMethod: '', amount: defaultAmt }]);
             setCustomAmount(false);
             setOrNumber('');
             const d = new Date();
@@ -95,13 +102,28 @@ export default function AddRecordModal({ isOpen, onClose, onAdd, initialName = '
 
         let finalDate = '';
 
+        // Normalize OR Number: if user types "10234", convert and send as "OR-10234"
+        let formattedOr = orNumber.trim();
+        if (formattedOr) {
+            if (!formattedOr.toUpperCase().startsWith('OR-')) {
+                formattedOr = `OR-${formattedOr}`;
+            }
+        }
+
+        // Format combined paymentMethod from hybrid rows
+        const paymentDetails = payments.map(p => {
+            const name = p.method === 'Custom' ? (p.customMethod.trim() || 'Custom') : p.method;
+            return `${name} (${peso(p.amount)})`;
+        });
+        const combinedPaymentMethod = paymentDetails.join(' & ');
+
         onAdd({
             member: name.trim(),
             type,
-            paymentMethod,
+            paymentMethod: combinedPaymentMethod,
             amount: Number(amount),
             time: timeStr,
-            orNumber: orNumber.trim(),
+            orNumber: formattedOr,
             date: finalDate,
             createdBy: createdBy.trim(),
         });
@@ -110,8 +132,16 @@ export default function AddRecordModal({ isOpen, onClose, onAdd, initialName = '
     }
 
     function handleAmountChange(val) {
+        const numVal = Number(val) || 0;
         setCustomAmount(true);
-        setAmount(val);
+        setAmount(numVal);
+        setPayments(prev => {
+            const next = [...prev];
+            if (next.length === 1) {
+                next[0].amount = numVal;
+            }
+            return next;
+        });
     }
 
     function handleTypeChange(newType) {
@@ -370,6 +400,7 @@ export default function AddRecordModal({ isOpen, onClose, onAdd, initialName = '
                                 min="0"
                                 step="50"
                                 required
+                                readOnly={payments.length > 1}
                                 style={{
                                     width: '100%',
                                     padding: '12px 16px 12px 36px',
@@ -380,13 +411,15 @@ export default function AddRecordModal({ isOpen, onClose, onAdd, initialName = '
                                     color: '#1e293b',
                                     outline: 'none',
                                     transition: 'border-color 0.2s, box-shadow 0.2s',
-                                    background: '#fafbff',
+                                    background: payments.length > 1 ? '#f1f5f9' : '#fafbff',
                                     fontFamily: 'inherit',
                                     fontVariantNumeric: 'tabular-nums',
                                 }}
                                 onFocus={e => {
-                                    e.target.style.borderColor = '#a5b4fc';
-                                    e.target.style.boxShadow = '0 0 0 3px rgba(99,102,241,0.1)';
+                                    if (payments.length <= 1) {
+                                        e.target.style.borderColor = '#a5b4fc';
+                                        e.target.style.boxShadow = '0 0 0 3px rgba(99,102,241,0.1)';
+                                    }
                                 }}
                                 onBlur={e => {
                                     e.target.style.borderColor = '#e2e8f0';
@@ -394,7 +427,11 @@ export default function AddRecordModal({ isOpen, onClose, onAdd, initialName = '
                                 }}
                             />
                         </div>
-                        {!customAmount && (
+                        {payments.length > 1 ? (
+                            <p style={{ fontSize: '0.68rem', color: '#94a3b8', marginTop: 6, fontWeight: 500 }}>
+                                Calculated automatically as the sum of all payments below.
+                            </p>
+                        ) : !customAmount && (
                             <p style={{
                                 fontSize: '0.68rem',
                                 color: '#94a3b8',
@@ -406,68 +443,184 @@ export default function AddRecordModal({ isOpen, onClose, onAdd, initialName = '
                         )}
                     </div>
 
-                    {/* Payment Method Selector — pill buttons */}
+                    {/* Payment Methods (Hybrid Support) */}
                     <div style={{ marginBottom: 20 }}>
-                        <label style={{
-                            display: 'block',
-                            fontSize: '0.75rem',
-                            fontWeight: 600,
-                            color: '#475569',
-                            marginBottom: 10,
-                            letterSpacing: '0.02em',
-                        }}>
-                            Payment Method
-                        </label>
-                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', flexDirection: isMobile ? 'column' : 'row' }}>
-                            {PAYMENT_METHOD_OPTIONS.map(opt => {
-                                const isActive = paymentMethod === opt.value;
-                                return (
-                                    <button
-                                        key={opt.value}
-                                        type="button"
-                                        onClick={() => setPaymentMethod(opt.value)}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                            <label style={{
+                                fontSize: '0.75rem',
+                                fontWeight: 600,
+                                color: '#475569',
+                                letterSpacing: '0.02em',
+                            }}>
+                                Payment Details
+                            </label>
+                            <button
+                                type="button"
+                                onClick={() => setPayments(prev => [...prev, { method: 'Cash', customMethod: '', amount: 0 }])}
+                                style={{
+                                    border: 'none',
+                                    background: 'transparent',
+                                    color: '#6366f1',
+                                    fontSize: '0.72rem',
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 4,
+                                    padding: '2px 6px',
+                                    borderRadius: 6,
+                                    transition: 'background 0.2s',
+                                }}
+                                onMouseEnter={e => e.currentTarget.style.background = '#eef2ff'}
+                                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                            >
+                                + Add Method
+                            </button>
+                        </div>
+
+                        {payments.map((p, index) => (
+                            <div key={index} style={{
+                                display: 'flex',
+                                gap: 10,
+                                marginBottom: 10,
+                                alignItems: 'center',
+                                background: '#f8fafc',
+                                padding: 12,
+                                borderRadius: 12,
+                                border: '1px solid #f1f5f9',
+                                flexWrap: 'wrap'
+                            }}>
+                                {/* Method Dropdown */}
+                                <div style={{ flex: '1 1 120px' }}>
+                                    <select
+                                        value={p.method}
+                                        onChange={e => {
+                                            const next = [...payments];
+                                            next[index].method = e.target.value;
+                                            if (e.target.value !== 'Custom') {
+                                                next[index].customMethod = '';
+                                            }
+                                            setPayments(next);
+                                        }}
                                         style={{
-                                            padding: '10px 16px',
-                                            borderRadius: 10,
-                                            border: `1.5px solid ${isActive ? opt.color : '#e2e8f0'}`,
-                                            background: isActive ? opt.bg : 'white',
-                                            color: isActive ? opt.color : '#64748b',
-                                            fontSize: '0.78rem',
+                                            width: '100%',
+                                            padding: '8px 12px',
+                                            borderRadius: 8,
+                                            border: '1.5px solid #e2e8f0',
+                                            fontSize: '0.8rem',
                                             fontWeight: 600,
-                                            cursor: 'pointer',
-                                            transition: 'all 0.2s',
+                                            color: '#1e293b',
+                                            outline: 'none',
+                                            background: 'white',
                                             fontFamily: 'inherit',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: 6,
-                                        }}
-                                        onMouseEnter={e => {
-                                            if (!isActive) {
-                                                e.currentTarget.style.borderColor = opt.color + '66';
-                                                e.currentTarget.style.background = opt.bg;
-                                            }
-                                        }}
-                                        onMouseLeave={e => {
-                                            if (!isActive) {
-                                                e.currentTarget.style.borderColor = '#e2e8f0';
-                                                e.currentTarget.style.background = 'white';
-                                            }
                                         }}
                                     >
-                                        {/* Indicator dot */}
-                                        <span style={{
-                                            width: 8,
-                                            height: 8,
-                                            borderRadius: '50%',
-                                            background: isActive ? opt.color : '#cbd5e1',
-                                            transition: 'background 0.2s',
-                                            flexShrink: 0,
-                                        }} />
-                                        {opt.label}
+                                        {PAYMENT_METHOD_OPTIONS.map(opt => (
+                                            <option key={opt.value} value={opt.value}>
+                                                {opt.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {/* Custom Method Input (if Custom selected) */}
+                                {p.method === 'Custom' && (
+                                    <div style={{ flex: '1 1 120px' }}>
+                                        <input
+                                            type="text"
+                                            value={p.customMethod}
+                                            onChange={e => {
+                                                const next = [...payments];
+                                                next[index].customMethod = e.target.value;
+                                                setPayments(next);
+                                            }}
+                                            placeholder="e.g. BPI, Maya"
+                                            required
+                                            style={{
+                                                width: '100%',
+                                                padding: '8px 12px',
+                                                borderRadius: 8,
+                                                border: '1.5px solid #e2e8f0',
+                                                fontSize: '0.8rem',
+                                                fontWeight: 500,
+                                                color: '#1e293b',
+                                                outline: 'none',
+                                                background: 'white',
+                                                fontFamily: 'inherit',
+                                            }}
+                                        />
+                                    </div>
+                                )}
+
+                                {/* Amount Input */}
+                                <div style={{ flex: '1 1 80px', position: 'relative' }}>
+                                    <span style={{
+                                        position: 'absolute',
+                                        left: 8,
+                                        top: '50%',
+                                        transform: 'translateY(-50%)',
+                                        color: '#94a3b8',
+                                        fontSize: '0.78rem',
+                                        fontWeight: 600,
+                                        pointerEvents: 'none',
+                                    }}>₱</span>
+                                    <input
+                                        type="number"
+                                        value={p.amount}
+                                        onChange={e => {
+                                            setCustomAmount(true);
+                                            const next = [...payments];
+                                            next[index].amount = Number(e.target.value) || 0;
+                                            setPayments(next);
+                                            // Recalculate total amount
+                                            const total = next.reduce((sum, item) => sum + item.amount, 0);
+                                            setAmount(total);
+                                        }}
+                                        min="0"
+                                        required
+                                        style={{
+                                            width: '100%',
+                                            padding: '8px 8px 8px 18px',
+                                            borderRadius: 8,
+                                            border: '1.5px solid #e2e8f0',
+                                            fontSize: '0.8rem',
+                                            fontWeight: 600,
+                                            color: '#1e293b',
+                                            outline: 'none',
+                                            background: 'white',
+                                            fontFamily: 'inherit',
+                                        }}
+                                    />
+                                </div>
+
+                                {/* Delete Button */}
+                                {payments.length > 1 && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const next = payments.filter((_, idx) => idx !== index);
+                                            setPayments(next);
+                                            // Recalculate total amount
+                                            const total = next.reduce((sum, item) => sum + item.amount, 0);
+                                            setAmount(total);
+                                        }}
+                                        style={{
+                                            border: 'none',
+                                            background: 'transparent',
+                                            color: '#ef4444',
+                                            cursor: 'pointer',
+                                            fontSize: '1rem',
+                                            padding: '4px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                        }}
+                                    >
+                                        ✕
                                     </button>
-                                );
-                            })}
-                        </div>
+                                )}
+                            </div>
+                        ))}
                     </div>
 
                     {/* OR Number and Date */}
@@ -604,17 +757,23 @@ export default function AddRecordModal({ isOpen, onClose, onAdd, initialName = '
                                         }}>
                                             {type}
                                         </span>
-                                        <span style={{
-                                            display: 'inline-block',
-                                            padding: '1px 8px',
-                                            borderRadius: 5,
-                                            fontSize: '0.65rem',
-                                            fontWeight: 600,
-                                            background: PAYMENT_METHOD_OPTIONS.find(o => o.value === paymentMethod)?.bg || '#ecfdf5',
-                                            color: PAYMENT_METHOD_OPTIONS.find(o => o.value === paymentMethod)?.color || '#10b981',
-                                        }}>
-                                            {paymentMethod}
-                                        </span>
+                                        {payments.map((p, idx) => {
+                                            const name = p.method === 'Custom' ? (p.customMethod.trim() || 'Custom') : p.method;
+                                            const opt = PAYMENT_METHOD_OPTIONS.find(o => o.value === p.method) || { color: '#64748b', bg: '#f1f5f9' };
+                                            return (
+                                                <span key={idx} style={{
+                                                    display: 'inline-block',
+                                                    padding: '1px 8px',
+                                                    borderRadius: 5,
+                                                    fontSize: '0.65rem',
+                                                    fontWeight: 600,
+                                                    background: opt.bg,
+                                                    color: opt.color,
+                                                }}>
+                                                    {name} ({peso(p.amount)})
+                                                </span>
+                                            );
+                                        })}
                                         {orNumber.trim() && (
                                             <span style={{ fontSize: '0.68rem', color: '#64748b', background: '#e2e8f0', padding: '1px 6px', borderRadius: 4, fontWeight: 500 }}>
                                                 OR: {orNumber.trim()}

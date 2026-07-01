@@ -11,24 +11,40 @@ const addMember = async (req, res) => {
     try {
         const recordTime = time || formatTime(new Date());
         const recordDate = date || formatDate(new Date());
+        const cleanOrNumber = orNumber ? String(orNumber).trim() : '';
 
-        const createNewRecord = ReyesGymRecords({
+        if (cleanOrNumber) {
+            const existingRecord = await ReyesGymRecords.findById(cleanOrNumber);
+            if (existingRecord) {
+                return res.status(400).json({ error: 'OR Number already exists' });
+            }
+        }
+
+        const recordFields = {
             time: recordTime,
             member: String(member).trim(),
             type: String(type).trim(),
             paymentMethod: paymentMethod ? String(paymentMethod).trim() : 'Cash',
             amount: Number(amount),
-            orNumber: orNumber ? String(orNumber).trim() : '',
+            orNumber: cleanOrNumber,
             date: recordDate,
             createdBy: createdBy,
-        })
+        };
+
+        if (cleanOrNumber) {
+            recordFields._id = cleanOrNumber;
+        }
+
+        const createNewRecord = new ReyesGymRecords(recordFields);
         await createNewRecord.save();
-        res.status(201).json({ message: "Member added successfully", data: createNewRecord })
-    }
-    catch (error) {
+        res.status(201).json({ message: "Member added successfully", data: createNewRecord });
+    } catch (error) {
+        if (error.code === 11000) {
+            return res.status(400).json({ error: 'OR Number already exists' });
+        }
         console.error('Error creating record:', error);
         res.status(500).json({ error: 'Failed to create record in database' });
     }
 }
 
-module.exports = { addMember }    
+module.exports = { addMember }

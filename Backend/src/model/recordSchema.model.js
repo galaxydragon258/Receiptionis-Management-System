@@ -2,6 +2,7 @@
 const mongoose = require('mongoose');
 
 const recordSchema = new mongoose.Schema({
+    _id: { type: String, default: () => new mongoose.Types.ObjectId().toString() },
     time: { type: String, required: true },
     member: { type: String, required: true },
     type: { type: String, required: true },
@@ -18,7 +19,7 @@ const recordSchema = new mongoose.Schema({
 
 // Map _id to id virtual property for front-end compatibility
 recordSchema.virtual('id').get(function () {
-    return this._id.toHexString();
+    return this._id ? this._id.toString() : '';
 });
 
 // TTL index to automatically delete records older than 2 months (60 days)

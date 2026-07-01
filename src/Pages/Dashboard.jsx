@@ -6,8 +6,9 @@ import MonthlyChart from '../components/MonthlyChart';
 import { MONTHS, DAYS_SHORT } from '../assets/Data/DatesData';
 import { formatDate, formatTime, peso } from '../utils/utility';
 import StatCard from '../components/StatCard';
-import { useQuery } from '@tanstack/react-query';
-import { getDailyData } from '../../api/api,';
+import useRecordServices from '../../services/recordServices';
+import saleStats from '../../SaleComputation/sales';
+
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||
     (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
@@ -20,15 +21,12 @@ export default function Dashboard() {
     const [modalOpen, setModalOpen] = useState(false);
 
 
-
     const isMobile = useMediaQuery('(max-width: 768px)');
     const isSmallMobile = useMediaQuery('(max-width: 480px)');
 
-    const { data, isLoading, error } = useQuery({
-        queryKey: ['daily-records'],
-        queryFn: getDailyData
-
-    })
+    // ─── Compute today's sales ───
+    const { todaySales: totalSalesToday, totalMonthlySales: totalSalesMonth } = saleStats();
+    const { data, isLoading, error } = useRecordServices();
 
     // live clock
     useEffect(() => {
@@ -74,14 +72,15 @@ export default function Dashboard() {
     }, [dailyRecords, todayString]);
 
 
+    const monthlyData = data?.monthlyData || [];
+    const recordData = data?.recordData || [];
+
 
     // calculate totals based on today's filtered records
-    const totalSalesToday = useMemo(() => todayRecords.reduce((s, r) => s + r.amount, 0), [todayRecords]);
-    const walkInCount = useMemo(() => todayRecords.filter(r => r.type === 'Walk-in').length, [todayRecords]);
-    const memberCount = useMemo(() => todayRecords.filter(r => r.type === 'Monthly').length, [todayRecords]);
+    const walkInCount = useMemo(() => recordData.filter(r => r.type === 'Walk-in').length, [recordData]);
+    const memberCount = useMemo(() => recordData.filter(r => r.type === 'Monthly').length, [recordData]);
 
-    const totalSalesMonth = monthlyData.reduce((s, d) => s + d.sales, 0);
-    const totalMembersMonth = monthlyData.reduce((s, d) => s + d.members, 0);
+    const totalMembersMonth = data?.monthlyData?.reduce((s, d) => s + d.members, 0);
 
     return (
         <div style={{ minHeight: '100vh', background: '#f8f9fc' }}>
@@ -89,78 +88,7 @@ export default function Dashboard() {
 
             <main style={{ maxWidth: 1280, margin: '0 auto', padding: isSmallMobile ? '12px 10px 40px' : isMobile ? '16px 12px 48px' : '24px 16px 60px' }}>
 
-                {/* ─── errors Alert Banner ─── */}
-                {errors && (
-                    <div style={{
-                        background: '#fef2f2',
-                        border: '1.5px solid #fca5a5',
-                        borderRadius: 12,
-                        padding: '16px 20px',
-                        marginBottom: 20,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 12,
-                        alignItems: 'flex-start',
-                        animation: 'fadeIn 0.3s ease-out both'
-                    }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2.5" strokeLinecap="round">
-                                <circle cx="12" cy="12" r="10" />
-                                <line x1="12" y1="8" x2="12" y2="12" />
-                                <line x1="12" y1="16" x2="12.01" y2="16" />
-                            </svg>
-                            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#991b1b' }}>{errors}</span>
-                        </div>
-                        <button
-                            onClick={() => window.location.reload()}
-                            style={{
-                                padding: '6px 14px',
-                                background: '#dc2626',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: 8,
-                                fontSize: '0.78rem',
-                                fontWeight: 700,
-                                cursor: 'pointer',
-                                transition: 'all 0.2s',
-                                boxShadow: '0 2px 6px rgba(220,38,38,0.2)',
-                            }}
-                            onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-1px)'}
-                            onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
-                        >
-                            Retry Connection
-                        </button>
-                    </div>
-                )}
 
-                {/* ─── Loading Spinner ─── */}
-                {loading && (
-                    <div style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        padding: '50px 20px',
-                        background: 'white',
-                        borderRadius: 16,
-                        border: '1px solid #f1f5f9',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-                        marginBottom: 20,
-                        gap: 14,
-                        animation: 'fadeIn 0.3s ease-out both'
-                    }}>
-                        <div className="animate-spin" style={{
-                            width: 28,
-                            height: 28,
-                            border: '3.5px solid #eef2ff',
-                            borderTop: '3.5px solid #6366f1',
-                            borderRadius: '50%',
-                        }} />
-                        <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#64748b' }}>
-                            Retrieving data from database...
-                        </span>
-                    </div>
-                )}
 
                 {/* ─── Header ─── */}
                 <div
@@ -278,7 +206,7 @@ export default function Dashboard() {
                     <StatCard
                         icon={<svg width={isSmallMobile ? 16 : 22} height={isSmallMobile ? 16 : 22} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>}
                         label="Total Sales Today"
-                        value={peso(totalSalesToday)}
+                        value={peso(totalSalesToday || 0)}
                         sub={`${todayRecords.length} transactions today`}
                         accent="indigo"
                         delay={1}
@@ -288,8 +216,8 @@ export default function Dashboard() {
                     <StatCard
                         icon={<svg width={isSmallMobile ? 16 : 22} height={isSmallMobile ? 16 : 22} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>}
                         label={`Total Sales — ${MONTHS[today.getMonth()]}`}
-                        value={peso(totalSalesMonth)}
-                        sub={`${totalMembersMonth} total members this month`}
+                        value={peso(totalSalesMonth || 0)}
+                        sub={`${totalMembersMonth || 0} total members this month`}
                         accent="emerald"
                         delay={2}
                         isMobile={isMobile}

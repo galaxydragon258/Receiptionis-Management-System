@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import Navbar from '../components/Navbar';
 import useMediaQuery from '../hooks/useMediaQuery';
 import { MONTHS } from '../assets/Data/DatesData';
-import { formatDate, peso } from '../utils/utility';
+import { formatDate, peso, getISODateString } from '../utils/utility';
+import todaySales from '../../SaleComputation/sales';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||
     (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
@@ -36,6 +37,7 @@ export default function SalesRecord() {
     // Chart Interaction State
     const [hoveredPoint, setHoveredPoint] = useState(null);
 
+
     // Fetch data
     const fetchData = useCallback(async () => {
         setLoading(true);
@@ -60,12 +62,6 @@ export default function SalesRecord() {
     }, [fetchData]);
 
     // Helper functions for date matching
-    const getISODateString = (dateObj) => {
-        const year = dateObj.getFullYear();
-        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-        const day = String(dateObj.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    };
 
     // Calculate Today & Month boundaries for static stats
     const todayStr = useMemo(() => getISODateString(new Date()), []);
@@ -132,23 +128,7 @@ export default function SalesRecord() {
     }, [records]);
 
     // Static stats (overall metrics)
-    const todaySales = useMemo(() => {
-        return records
-            .filter(r => {
-                const rDate = r.createdAt ? new Date(r.createdAt) : new Date(r.date || new Date());
-                return getISODateString(rDate) === todayStr;
-            })
-            .reduce((sum, r) => sum + r.amount, 0);
-    }, [records, todayStr]);
-
-    const monthlySales = useMemo(() => {
-        return records
-            .filter(r => {
-                const rDate = r.createdAt ? new Date(r.createdAt) : new Date(r.date || new Date());
-                return rDate.getMonth() === currentMonthNum && rDate.getFullYear() === currentYearNum;
-            })
-            .reduce((sum, r) => sum + r.amount, 0);
-    }, [records, currentMonthNum, currentYearNum]);
+    const { todaySales: totalTodaySales, totalMonthlySales: monthlySales } = todaySales();
 
     // Filtered stats (changes based on filters)
     const filteredTotalSales = useMemo(() => {
@@ -365,75 +345,6 @@ export default function SalesRecord() {
 
             <main style={{ maxWidth: 1280, margin: '0 auto', padding: isSmallMobile ? '12px 10px 40px' : isMobile ? '16px 12px 48px' : '24px 16px 60px' }}>
 
-                {/* Error Banner */}
-                {error && (
-                    <div style={{
-                        background: '#fef2f2',
-                        border: '1.5px solid #fca5a5',
-                        borderRadius: 12,
-                        padding: '16px 20px',
-                        marginBottom: 20,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        animation: 'fadeIn 0.3s ease-out both'
-                    }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2.5" strokeLinecap="round">
-                                <circle cx="12" cy="12" r="10" />
-                                <line x1="12" y1="8" x2="12" y2="12" />
-                                <line x1="12" y1="16" x2="12.01" y2="16" />
-                            </svg>
-                            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#991b1b' }}>{error}</span>
-                        </div>
-                        <button
-                            onClick={fetchData}
-                            style={{
-                                padding: '6px 14px',
-                                background: '#dc2626',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: 8,
-                                fontSize: '0.78rem',
-                                fontWeight: 700,
-                                cursor: 'pointer',
-                                transition: 'all 0.2s',
-                            }}
-                        >
-                            Retry
-                        </button>
-                    </div>
-                )}
-
-                {/* Loading State */}
-                {loading && (
-                    <div style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        padding: '60px 20px',
-                        background: 'white',
-                        borderRadius: 16,
-                        border: '1px solid #f1f5f9',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-                        marginBottom: 20,
-                        gap: 14,
-                        animation: 'fadeIn 0.3s ease-out both'
-                    }}>
-                        <div className="animate-spin" style={{
-                            width: 32,
-                            height: 32,
-                            border: '3.5px solid #eef2ff',
-                            borderTop: '3.5px solid #6366f1',
-                            borderRadius: '50%',
-                        }} />
-                        <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#64748b' }}>
-                            Retrieving sales audit logs...
-                        </span>
-                    </div>
-                )}
-
                 {/* Header Section */}
                 <div
                     className="animate-fade-in"
@@ -529,7 +440,7 @@ export default function SalesRecord() {
                             Today's Sales (Total)
                         </span>
                         <h3 style={{ fontSize: '1.45rem', fontWeight: 800, color: '#4f46e5', margin: '8px 0 2px' }}>
-                            {peso(todaySales)}
+                            {peso(totalTodaySales)}
                         </h3>
                         <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
                             Aggregated revenue stream today

@@ -1,7 +1,7 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 
-export const getDailyData = async () => {
+const getDailyData = async () => {
     try {
 
 
@@ -17,9 +17,23 @@ export const getDailyData = async () => {
         }
         const recordData = await recordRes.json();
         const monthlyData = await monhtlyRes.json();
-        return { recordData, monthlyData }
+
+        console.log('recordData', recordData)
+        console.log('monthlyData', monthlyData)
+
+        return {
+            recordData: Array.isArray(recordData) ? recordData : [],
+            monthlyData: Array.isArray(monthlyData) ? monthlyData : []
+        }
     } catch (error) {
-        console.log(error)
+        console.error(error)
+        return {
+            recordData: [],
+            monthlyData: []
+        }
+
     }
 
 }
+
+export default getDailyData;
