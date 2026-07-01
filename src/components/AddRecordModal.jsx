@@ -478,6 +478,7 @@ export default function AddRecordModal({ isOpen, onClose, onAdd, initialName = '
                             </button>
                         </div>
 
+
                         {payments.map((p, index) => (
                             <div key={index} style={{
                                 display: 'flex',
