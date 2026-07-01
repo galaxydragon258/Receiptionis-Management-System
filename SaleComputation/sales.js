@@ -25,5 +25,8 @@ export default function saleStats() {
     }, 0)
 
     return { todaySales, totalMonthlySales };
+
+
 }
+
 
