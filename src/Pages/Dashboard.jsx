@@ -25,7 +25,7 @@ export default function Dashboard() {
     const { todaySales: totalSalesToday, totalMonthlySales: totalSalesMonth } = saleStats();
     const { data, isLoading, error } = useRecordServices();
 
-    console.log(totalSalesToday);
+    console.log('hey', totalSalesMonth);
 
     // live clock
     useEffect(() => {
