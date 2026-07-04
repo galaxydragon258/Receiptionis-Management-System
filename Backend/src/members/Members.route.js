@@ -11,12 +11,23 @@ const addMember = async (req, res) => {
     try {
         const recordTime = time || formatTime(new Date());
         const recordDate = date || formatDate(new Date());
-        const cleanOrNumber = orNumber ? String(orNumber).trim() : '';
 
-        if (cleanOrNumber) {
+        // Validate and normalize OR Number
+        let cleanOrNumber = '';
+        let orExists = false;
+
+        if (orNumber && String(orNumber).trim()) {
+            cleanOrNumber = String(orNumber).trim();
+
+            // Convert 5-digit plain number to OR-12345
+            if (/^\d{5}$/.test(cleanOrNumber)) {
+                cleanOrNumber = `OR-${cleanOrNumber}`;
+            }
+
+            // Check if this OR already exists
             const existingRecord = await ReyesGymRecords.findById(cleanOrNumber);
             if (existingRecord) {
-                return res.status(400).json({ error: 'OR Number already exists' });
+                orExists = true;
             }
         }
 
