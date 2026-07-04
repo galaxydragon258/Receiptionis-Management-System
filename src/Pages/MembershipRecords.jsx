@@ -94,8 +94,8 @@ export default function MembershipRecords() {
         Object.keys(memberMap).forEach(name => {
             const mRecords = memberMap[name].sort((a, b) => parseRecordDate(b) - parseRecordDate(a));
 
-            // Separate Monthly/PT membership records from Walk-in records
-            const membershipRecords = mRecords.filter(r => r.type === 'Monthly' || r.type === 'Personal Training');
+            // Separate Monthly/Premium/PT membership records from Walk-in records
+            const membershipRecords = mRecords.filter(r => r.type === 'Monthly' || r.type === 'Premium' || r.type === 'Personal Training');
             const walkinRecords = mRecords.filter(r => r.type === 'Walk-in');
 
             const hasMembership = membershipRecords.length > 0;
@@ -108,7 +108,12 @@ export default function MembershipRecords() {
                 const lastPaidDate = parseRecordDate(latestMembership);
 
                 const expiryDate = new Date(lastPaidDate);
-                expiryDate.setDate(expiryDate.getDate() + 30); // 30-day membership
+                const durationStr = latestMembership.duration || '1 Month';
+                let months = 1;
+                if (durationStr.includes('3')) months = 3;
+                else if (durationStr.includes('6')) months = 6;
+                else if (durationStr.includes('12')) months = 12;
+                expiryDate.setMonth(expiryDate.getMonth() + months);
                 const expiryReset = new Date(expiryDate.getFullYear(), expiryDate.getMonth(), expiryDate.getDate());
 
                 const diffTime = expiryReset - todayReset;
@@ -220,7 +225,13 @@ export default function MembershipRecords() {
         if (member.status === 'Expired') return 0;
         if (member.latestRecord?.type === 'Walk-in') return 100;
 
-        const totalDuration = 30; // Monthly / PT
+        const durationStr = member.latestRecord?.duration || '1 Month';
+        let months = 1;
+        if (durationStr.includes('3')) months = 3;
+        else if (durationStr.includes('6')) months = 6;
+        else if (durationStr.includes('12')) months = 12;
+
+        const totalDuration = months * 30; // approx total days
         const remaining = Math.max(0, Math.min(totalDuration, member.remainingDays));
         return Math.round((remaining / totalDuration) * 100);
     };

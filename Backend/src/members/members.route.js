@@ -2,7 +2,7 @@ const { ReyesGymRecords } = require('../model/recordSchema.model.js');
 const { formatDate, formatTime } = require('../utils/utility.js');
 
 const addMember = async (req, res) => {
-    const { member, type, paymentMethod, amount, time, orNumber, date, createdBy } = req.body;
+    const { member, type, paymentMethod, amount, time, orNumber, date, createdBy, duration } = req.body;
 
     if (!member || !type || amount === undefined) {
         return res.status(400).json({ error: 'Missing required fields: member, type, amount' });
@@ -35,6 +35,7 @@ const addMember = async (req, res) => {
             time: recordTime,
             member: String(member).trim(),
             type: String(type).trim(),
+            duration: duration ? String(duration).trim() : '',
             paymentMethod: paymentMethod ? String(paymentMethod).trim() : 'Cash',
             amount: Number(amount),
             orNumber: cleanOrNumber,

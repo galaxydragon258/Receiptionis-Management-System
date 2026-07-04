@@ -76,7 +76,11 @@ export default function SalesRecord() {
             if (endDate && rDateStr > endDate) return false;
 
             // Payment Method Filter
-            if (paymentMethod !== 'All' && r.paymentMethod !== paymentMethod) return false;
+            if (paymentMethod !== 'All') {
+                const methodStr = (r.paymentMethod || 'Cash').toLowerCase().replace(/[^a-z0-9]/g, '');
+                const targetMethod = paymentMethod.toLowerCase().replace(/[^a-z0-9]/g, '');
+                if (!methodStr.includes(targetMethod)) return false;
+            }
 
             // Receptionist Filter
             if (type !== 'All' && r.type !== type) return false;
@@ -136,28 +140,62 @@ export default function SalesRecord() {
 
     // Payment breakdown metrics (on filtered records)
     const paymentBreakdown = useMemo(() => {
-        let cashAmt = 0, gcashAmt = 0, bankAmt = 0;
-        let cashCount = 0, gcashCount = 0, bankCount = 0;
+        let cashAmt = 0, gcashAmt = 0, bpiAmt = 0;
+        let cashCount = 0, gcashCount = 0, bpiCount = 0;
 
         filteredRecords.forEach(r => {
-            const method = r.paymentMethod || 'Cash';
-            if (method === 'Cash') {
-                cashAmt += r.amount;
-                cashCount++;
-            } else if (method === 'GCash') {
-                gcashAmt += r.amount;
-                gcashCount++;
-            } else if (method === 'Bank Transfer') {
-                bankAmt += r.amount;
-                bankCount++;
+            const methodStr = r.paymentMethod || 'Cash';
+            const amount = Number(r.amount) || 0;
+            
+            // Check if it's a hybrid payment method
+            const parts = methodStr.split('&').map(p => p.trim());
+            let matched = false;
+            
+            parts.forEach(part => {
+                const match = part.match(/^([a-zA-Z\s\-]+)(?:\s*\([₱\d\.\,\s]+\))?/);
+                if (match) {
+                    const method = match[1].trim();
+                    const normalized = method.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    const amtMatch = part.match(/\([₱\s]*([\d\.\,]+)\)/);
+                    const amt = amtMatch ? parseFloat(amtMatch[1].replace(/,/g, '')) : amount / parts.length;
+                    
+                    if (normalized.includes('cash') && !normalized.includes('gcash')) {
+                        cashAmt += amt;
+                        cashCount++;
+                        matched = true;
+                    } else if (normalized.includes('gcash')) {
+                        gcashAmt += amt;
+                        gcashCount++;
+                        matched = true;
+                    } else if (normalized.includes('bpi') || normalized.includes('bank')) {
+                        bpiAmt += amt;
+                        bpiCount++;
+                        matched = true;
+                    }
+                }
+            });
+            
+            if (!matched) {
+                // Fallback for legacy entries
+                const normalizedStr = methodStr.toLowerCase().replace(/[^a-z0-9]/g, '');
+                if (normalizedStr.includes('gcash')) {
+                    gcashAmt += amount;
+                    gcashCount++;
+                } else if (normalizedStr.includes('bpi') || normalizedStr.includes('bank')) {
+                    bpiAmt += amount;
+                    bpiCount++;
+                } else {
+                    cashAmt += amount;
+                    cashCount++;
+                }
             }
         });
 
-        const total = cashAmt + gcashAmt + bankAmt || 1; // avoid division by zero
+        const total = cashAmt + gcashAmt + bpiAmt || 1; // avoid division by zero
         return {
             cash: { amount: cashAmt, count: cashCount, percent: (cashAmt / total) * 100 },
             gcash: { amount: gcashAmt, count: gcashCount, percent: (gcashAmt / total) * 100 },
-            bank: { amount: bankAmt, count: bankCount, percent: (bankAmt / total) * 100 }
+            bpi: { amount: bpiAmt, count: bpiCount, percent: (bpiAmt / total) * 100 }
         };
     }, [filteredRecords]);
 
@@ -591,7 +629,7 @@ export default function SalesRecord() {
                                     <option value="All">All Payment Methods</option>
                                     <option value="Cash">Cash</option>
                                     <option value="GCash">GCash</option>
-                                    <option value="Bank Transfer">Bank Transfer</option>
+                                    <option value="BPI">BPI</option>
                                 </select>
                             </div>
 
@@ -614,7 +652,8 @@ export default function SalesRecord() {
                                 >
                                     <option value="All">All Types</option>
                                     <option value="Walk-in">Walk-in</option>
-                                    <option value="Monthly">Monthly</option>
+                                    <option value="Monthly">Basic Membership</option>
+                                    <option value="Premium">Premium Membership</option>
                                     <option value="Personal Training">Personal Training</option>
                                 </select>
                             </div>
@@ -1023,7 +1062,7 @@ export default function SalesRecord() {
                         </div>
                     </div>
 
-                    {/* Bank Transfer */}
+                    {/* BPI Receipts */}
                     <div style={{
                         background: 'white',
                         borderRadius: 16,
@@ -1045,28 +1084,28 @@ export default function SalesRecord() {
                                 }}>
                                     <img src="/Bpi.png" style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="BPI" />
                                 </div>
-                                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#334155' }}>Bank Transfers</span>
+                                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#334155' }}>BPI Receipts</span>
                             </div>
                             <span style={{ fontSize: '0.72rem', fontWeight: 600, color: '#94a3b8' }}>
-                                {paymentBreakdown.bank.count} transactions
+                                {paymentBreakdown.bpi.count} transactions
                             </span>
                         </div>
-                        <h4 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#f59e0b', marginBottom: 8 }}>
-                            {peso(paymentBreakdown.bank.amount)}
+                        <h4 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#dc2626', marginBottom: 8 }}>
+                            {peso(paymentBreakdown.bpi.amount)}
                         </h4>
                         {/* Progress Bar */}
                         <div style={{ height: 6, background: '#f1f5f9', borderRadius: 10 }}>
                             <div style={{
                                 height: '100%',
-                                background: '#f59e0b',
+                                background: '#dc2626',
                                 borderRadius: 10,
-                                width: `${paymentBreakdown.bank.percent}%`,
+                                width: `${paymentBreakdown.bpi.percent}%`,
                                 transition: 'width 0.8s ease'
                             }} />
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>
                             <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#94a3b8' }}>
-                                {paymentBreakdown.bank.percent.toFixed(1)}% of total
+                                {paymentBreakdown.bpi.percent.toFixed(1)}% of total
                             </span>
                         </div>
                     </div>
@@ -1243,8 +1282,8 @@ export default function SalesRecord() {
                                             <td style={{ padding: '12px 14px' }}>
                                                 <span style={{
                                                     display: 'inline-block', padding: '3px 8px', borderRadius: 6, fontSize: '0.7rem', fontWeight: 600,
-                                                    background: r.type === 'Monthly' ? '#eef2ff' : r.type === 'Walk-in' ? '#f0f9ff' : '#fdf4ff',
-                                                    color: r.type === 'Monthly' ? '#6366f1' : r.type === 'Walk-in' ? '#0ea5e9' : '#a855f7'
+                                                    background: r.type === 'Monthly' ? '#eef2ff' : r.type === 'Premium' ? '#ecfdf5' : r.type === 'Walk-in' ? '#f0f9ff' : '#fdf4ff',
+                                                    color: r.type === 'Monthly' ? '#6366f1' : r.type === 'Premium' ? '#10b981' : r.type === 'Walk-in' ? '#0ea5e9' : '#a855f7'
                                                 }}>
                                                     {r.type}
                                                 </span>
@@ -1252,8 +1291,12 @@ export default function SalesRecord() {
                                             <td style={{ padding: '12px 14px' }}>
                                                 <span style={{
                                                     display: 'inline-block', padding: '3px 8px', borderRadius: 6, fontSize: '0.7rem', fontWeight: 600,
-                                                    background: r.paymentMethod === 'Cash' ? '#ecfdf5' : r.paymentMethod === 'GCash' ? '#eff6ff' : '#fef3c7',
-                                                    color: r.paymentMethod === 'Cash' ? '#10b981' : r.paymentMethod === 'GCash' ? '#2563eb' : '#d97706'
+                                                    background: 
+                                                        r.paymentMethod?.includes('Cash') && !r.paymentMethod?.includes('&') ? '#ecfdf5' : 
+                                                        r.paymentMethod?.includes('GCash') && !r.paymentMethod?.includes('&') ? '#eff6ff' : '#fef3c7',
+                                                    color: 
+                                                        r.paymentMethod?.includes('Cash') && !r.paymentMethod?.includes('&') ? '#10b981' : 
+                                                        r.paymentMethod?.includes('GCash') && !r.paymentMethod?.includes('&') ? '#2563eb' : '#d97706'
                                                 }}>
                                                     {r.paymentMethod || 'Cash'}
                                                 </span>
@@ -1311,15 +1354,19 @@ export default function SalesRecord() {
                                             </span>
                                             <span style={{
                                                 display: 'inline-block', padding: '2px 6px', borderRadius: 4, fontSize: '0.62rem', fontWeight: 600,
-                                                background: r.type === 'Monthly' ? '#eef2ff' : r.type === 'Walk-in' ? '#f0f9ff' : '#fdf4ff',
-                                                color: r.type === 'Monthly' ? '#6366f1' : r.type === 'Walk-in' ? '#0ea5e9' : '#a855f7'
+                                                background: r.type === 'Monthly' ? '#eef2ff' : r.type === 'Premium' ? '#ecfdf5' : r.type === 'Walk-in' ? '#f0f9ff' : '#fdf4ff',
+                                                color: r.type === 'Monthly' ? '#6366f1' : r.type === 'Premium' ? '#10b981' : r.type === 'Walk-in' ? '#0ea5e9' : '#a855f7'
                                             }}>
                                                 {r.type}
                                             </span>
                                             <span style={{
                                                 display: 'inline-block', padding: '2px 6px', borderRadius: 4, fontSize: '0.62rem', fontWeight: 600,
-                                                background: r.paymentMethod === 'Cash' ? '#ecfdf5' : r.paymentMethod === 'GCash' ? '#eff6ff' : '#fef3c7',
-                                                color: r.paymentMethod === 'Cash' ? '#10b981' : r.paymentMethod === 'GCash' ? '#2563eb' : '#d97706'
+                                                background: 
+                                                    r.paymentMethod?.includes('Cash') && !r.paymentMethod?.includes('&') ? '#ecfdf5' : 
+                                                    r.paymentMethod?.includes('GCash') && !r.paymentMethod?.includes('&') ? '#eff6ff' : '#fef3c7',
+                                                color: 
+                                                    r.paymentMethod?.includes('Cash') && !r.paymentMethod?.includes('&') ? '#10b981' : 
+                                                    r.paymentMethod?.includes('GCash') && !r.paymentMethod?.includes('&') ? '#2563eb' : '#d97706'
                                             }}>
                                                 {r.paymentMethod || 'Cash'}
                                             </span>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import Navbar from '../components/Navbar';
 import AddRecordModal from '../components/AddRecordModal';
 import useMediaQuery from '../hooks/useMediaQuery';
@@ -13,6 +14,7 @@ import saleStats from '../../SaleComputation/sales';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 export default function Dashboard() {
+    const queryClient = useQueryClient();
     const [now, setNow] = useState(new Date());
     const today = useMemo(() => new Date(), []);
     const [modalOpen, setModalOpen] = useState(false);
@@ -25,7 +27,6 @@ export default function Dashboard() {
     const { todaySales: totalSalesToday, totalMonthlySales: totalSalesMonth } = saleStats();
     const { data, isLoading, error } = useRecordServices();
 
-    console.log('hey', totalSalesMonth);
 
     // live clock
     useEffect(() => {
@@ -45,20 +46,24 @@ export default function Dashboard() {
 
             if (!res.ok) {
                 const errorsData = await res.json();
-                throw new errors(errorsData.errors || 'Failed to save record to database');
+                throw new Error(errorsData.errors || 'Failed to save record to database');
             }
 
-            const savedRecord = await res.json();
+            const responseData = await res.json();
 
 
 
-            console.log(savedRecord)
-            setDailyRecords(prev => [...prev, savedRecord]);
+            console.log(responseData)
+            const savedRecordObj = responseData.data || responseData;
+            setDailyRecords(prev => [...prev, savedRecordObj]);
+            
+            // Invalidate query to refresh data (including monthly sales breakdown) from backend
+            queryClient.invalidateQueries({ queryKey: ['daily-records'] });
         } catch (err) {
-            console.errors('errors saving record:', err);
-            alert(`errors saving record: ${err.message}`);
+            console.error('Error saving record:', err);
+            alert(`Error saving record: ${err.message}`);
         }
-    }, []);
+    }, [queryClient]);
 
 
     // Filter records for today's date
@@ -74,10 +79,16 @@ export default function Dashboard() {
     const monthlyData = data?.monthlyData || [];
     const recordData = data?.recordData || [];
 
+    // Sync React Query's recordData into local dailyRecords state
+    useEffect(() => {
+        if (recordData) {
+            setDailyRecords(recordData);
+        }
+    }, [recordData]);
 
     // calculate totals based on today's filtered records
-    const walkInCount = useMemo(() => recordData.filter(r => r.type === 'Walk-in').length, [recordData]);
-    const memberCount = useMemo(() => recordData.filter(r => r.type === 'Monthly').length, [recordData]);
+    const walkInCount = useMemo(() => todayRecords.filter(r => r.type === 'Walk-in').length, [todayRecords]);
+    const memberCount = useMemo(() => todayRecords.filter(r => r.type === 'Monthly' || r.type === 'Premium').length, [todayRecords]);
 
     const totalMembersMonth = data?.monthlyData?.reduce((s, d) => s + d.members, 0);
 
@@ -383,12 +394,14 @@ export default function Dashboard() {
                                                     fontWeight: 600,
                                                     background:
                                                         r.type === 'Monthly' ? '#eef2ff' :
-                                                            r.type === 'Walk-in' ? '#f0f9ff' :
-                                                                '#fdf4ff',
+                                                            r.type === 'Premium' ? '#ecfdf5' :
+                                                                r.type === 'Walk-in' ? '#f0f9ff' :
+                                                                    '#fdf4ff',
                                                     color:
                                                         r.type === 'Monthly' ? '#6366f1' :
-                                                            r.type === 'Walk-in' ? '#0ea5e9' :
-                                                                '#a855f7',
+                                                            r.type === 'Premium' ? '#10b981' :
+                                                                r.type === 'Walk-in' ? '#0ea5e9' :
+                                                                    '#a855f7',
                                                 }}>
                                                     {r.type}
                                                 </span>
@@ -465,10 +478,12 @@ export default function Dashboard() {
                                                         fontWeight: 600,
                                                         background:
                                                             r.type === 'Monthly' ? '#eef2ff' :
-                                                                r.type === 'Walk-in' ? '#f0f9ff' : '#fdf4ff',
+                                                                r.type === 'Premium' ? '#ecfdf5' :
+                                                                    r.type === 'Walk-in' ? '#f0f9ff' : '#fdf4ff',
                                                         color:
                                                             r.type === 'Monthly' ? '#6366f1' :
-                                                                r.type === 'Walk-in' ? '#0ea5e9' : '#a855f7',
+                                                                r.type === 'Premium' ? '#10b981' :
+                                                                    r.type === 'Walk-in' ? '#0ea5e9' : '#a855f7',
                                                     }}>
                                                         {r.type}
                                                     </span>
@@ -573,6 +588,7 @@ export default function Dashboard() {
                             </h3>
                             {[
                                 { type: 'Monthly', color: '#6366f1', bg: '#eef2ff' },
+                                { type: 'Premium', color: '#10b981', bg: '#ecfdf5' },
                                 { type: 'Walk-in', color: '#0ea5e9', bg: '#f0f9ff' },
                                 { type: 'Personal Training', color: '#a855f7', bg: '#fdf4ff' },
                             ].map(cat => {

@@ -3,21 +3,32 @@ import useMediaQuery from '../hooks/useMediaQuery';
 import { formatDate } from '../utils/utility';
 
 const TYPE_OPTIONS = [
-    { value: 'Monthly', label: 'Basic Membership', amount: 2100, color: '#6366f1', bg: '#eef2ff' },
+    { value: 'Monthly', label: 'Basic Membership', amount: 2200, color: '#6366f1', bg: '#eef2ff' },
     { value: 'Premium', label: 'Premium Membership', amount: 3600, color: '#10b981', bg: '#ecfdf5' },
     { value: 'Walk-in', label: 'Walk-in / Day Pass', amount: 500, color: '#0ea5e9', bg: '#f0f9ff' },
     { value: 'Personal Training', label: 'Personal Training', amount: 1200, color: '#a855f7', bg: '#fdf4ff' },
-
 ];
 
 const PAYMENT_METHOD_OPTIONS = [
     { value: 'Cash', label: 'Cash', color: '#10b981', bg: '#ecfdf5' },
     { value: 'GCash', label: 'GCash', color: '#2563eb', bg: '#eff6ff' },
     { value: 'BPI', label: 'BPI', color: '#dc2626', bg: '#fef2f2' },
-    { value: 'Maya', label: 'Maya', color: '#a855f7', bg: '#fdf4ff' },
-    { value: 'Bank Transfer', label: 'Bank Transfer', color: '#d97706', bg: '#fef3c7' },
-    { value: 'Custom', label: 'Other (Custom)', color: '#64748b', bg: '#f1f5f9' },
 ];
+
+const MEMBERSHIP_PRICING = {
+    Monthly: {
+        '1 Month': 2200,
+        '3 Months': 6100,
+        '6 Months': 11100,
+        '12 Months': 20100
+    },
+    Premium: {
+        '1 Month': 3600,
+        '3 Months': 10000,
+        '6 Months': 18000,
+        '12 Months': 32000
+    }
+};
 
 function peso(n) {
     return '₱' + Number(n).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -26,8 +37,9 @@ function peso(n) {
 export default function AddRecordModal({ isOpen, onClose, onAdd, initialName = '', initialType = 'Monthly' }) {
     const [name, setName] = useState(initialName);
     const [type, setType] = useState(initialType);
-    const [payments, setPayments] = useState([{ method: 'Cash', customMethod: '', amount: 2100 }]);
-    const [amount, setAmount] = useState(2100);
+    const [duration, setDuration] = useState('1 Month');
+    const [payments, setPayments] = useState([{ method: 'Cash', customMethod: '', amount: 2200 }]);
+    const [amount, setAmount] = useState(2200);
     const [customAmount, setCustomAmount] = useState(false);
     const [orNumber, setOrNumber] = useState('');
 
@@ -43,24 +55,34 @@ export default function AddRecordModal({ isOpen, onClose, onAdd, initialName = '
     const nameRef = useRef(null);
     const isMobile = useMediaQuery('(max-width: 480px)');
 
-    // Auto-fill amount when type changes (unless user overrode it)
+    // Auto-fill amount when type or duration changes (unless user overrode it)
     useEffect(() => {
         if (!customAmount) {
-            const opt = TYPE_OPTIONS.find(o => o.value === type);
-            if (opt) {
-                setAmount(opt.amount);
-                setPayments([{ method: 'Cash', customMethod: '', amount: opt.amount }]);
+            let defaultAmt = 0;
+            if (type === 'Monthly' || type === 'Premium') {
+                defaultAmt = MEMBERSHIP_PRICING[type][duration] || 0;
+            } else {
+                const opt = TYPE_OPTIONS.find(o => o.value === type);
+                defaultAmt = opt ? opt.amount : 0;
             }
+            setAmount(defaultAmt);
+            setPayments([{ method: 'Cash', customMethod: '', amount: defaultAmt }]);
         }
-    }, [type, customAmount]);
+    }, [type, duration, customAmount]);
 
     // Focus the name input when modal opens
     useEffect(() => {
         if (isOpen) {
             setName(initialName);
             setType(initialType);
-            const opt = TYPE_OPTIONS.find(o => o.value === initialType);
-            const defaultAmt = opt ? opt.amount : 2100;
+            setDuration('1 Month');
+            let defaultAmt = 0;
+            if (initialType === 'Monthly' || initialType === 'Premium') {
+                defaultAmt = MEMBERSHIP_PRICING[initialType]['1 Month'] || 0;
+            } else {
+                const opt = TYPE_OPTIONS.find(o => o.value === initialType);
+                defaultAmt = opt ? opt.amount : 2200;
+            }
             setAmount(defaultAmt);
             setPayments([{ method: 'Cash', customMethod: '', amount: defaultAmt }]);
             setCustomAmount(false);
@@ -100,7 +122,9 @@ export default function AddRecordModal({ isOpen, onClose, onAdd, initialName = '
             hour12: true,
         });
 
-        let finalDate = '';
+        const [yr, mo, dy] = recordDate.split('-').map(Number);
+        const parsedDate = new Date(yr, mo - 1, dy);
+        const finalDate = formatDate(parsedDate);
 
         // Normalize OR Number: if user types "10234", convert and send as "OR-10234"
         let formattedOr = orNumber.trim();
@@ -120,6 +144,7 @@ export default function AddRecordModal({ isOpen, onClose, onAdd, initialName = '
         onAdd({
             member: name.trim(),
             type,
+            duration: (type === 'Monthly' || type === 'Premium') ? duration : '',
             paymentMethod: combinedPaymentMethod,
             amount: Number(amount),
             time: timeStr,
@@ -369,6 +394,50 @@ export default function AddRecordModal({ isOpen, onClose, onAdd, initialName = '
                             })}
                         </div>
                     </div>
+
+                    {/* Membership Duration (Only shown for Monthly/Premium) */}
+                    {(type === 'Monthly' || type === 'Premium') && (
+                        <div style={{ marginBottom: 20 }}>
+                            <label style={{
+                                display: 'block',
+                                fontSize: '0.75rem',
+                                fontWeight: 600,
+                                color: '#475569',
+                                marginBottom: 10,
+                                letterSpacing: '0.02em',
+                            }}>
+                                Membership Duration
+                            </label>
+                            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                {['1 Month', '3 Months', '6 Months', '12 Months'].map(dur => {
+                                    const isActive = duration === dur;
+                                    const themeColor = type === 'Monthly' ? '#6366f1' : '#10b981';
+                                    const themeBg = type === 'Monthly' ? '#eef2ff' : '#ecfdf5';
+                                    return (
+                                        <button
+                                            key={dur}
+                                            type="button"
+                                            onClick={() => setDuration(dur)}
+                                            style={{
+                                                padding: '8px 14px',
+                                                borderRadius: 8,
+                                                border: `1.5px solid ${isActive ? themeColor : '#e2e8f0'}`,
+                                                background: isActive ? themeBg : 'white',
+                                                color: isActive ? themeColor : '#64748b',
+                                                fontSize: '0.75rem',
+                                                fontWeight: 600,
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s',
+                                                fontFamily: 'inherit',
+                                            }}
+                                        >
+                                            {dur}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Amount */}
                     <div style={{ marginBottom: 24 }}>
@@ -668,6 +737,45 @@ export default function AddRecordModal({ isOpen, onClose, onAdd, initialName = '
                         </div>
 
                         {/* Date */}
+                        <div style={{ flex: 1 }}>
+                            <label style={{
+                                display: 'block',
+                                fontSize: '0.75rem',
+                                fontWeight: 600,
+                                color: '#475569',
+                                marginBottom: 8,
+                                letterSpacing: '0.02em',
+                            }}>
+                                Record Date
+                            </label>
+                            <input
+                                type="date"
+                                value={recordDate}
+                                onChange={e => setRecordDate(e.target.value)}
+                                required
+                                style={{
+                                    width: '100%',
+                                    padding: '12px 16px',
+                                    borderRadius: 12,
+                                    border: '1.5px solid #e2e8f0',
+                                    fontSize: '0.88rem',
+                                    fontWeight: 500,
+                                    color: '#1e293b',
+                                    outline: 'none',
+                                    transition: 'border-color 0.2s, box-shadow 0.2s',
+                                    background: '#fafbff',
+                                    fontFamily: 'inherit',
+                                }}
+                                onFocus={e => {
+                                    e.target.style.borderColor = '#a5b4fc';
+                                    e.target.style.boxShadow = '0 0 0 3px rgba(99,102,241,0.1)';
+                                }}
+                                onBlur={e => {
+                                    e.target.style.borderColor = '#e2e8f0';
+                                    e.target.style.boxShadow = 'none';
+                                }}
+                            />
+                        </div>
 
                     </div>
 
