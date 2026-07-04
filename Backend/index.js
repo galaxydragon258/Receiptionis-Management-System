@@ -15,7 +15,7 @@ const route = express.Router();
 const { getDailyData } = require("./src/Analytics/dailyRecords.route.js");
 const { connectToDatabase } = require('./src/config/db.js');
 const { getMonthlyData } = require('./src/Analytics/analytics.js')
-const { addMember } = require('./src/members/Members.route.js')
+const { addMember } = require('./src/members/members.route.js')
 
 
 connectToDatabase()
