@@ -5,10 +5,7 @@ import { MONTHS } from '../assets/Data/DatesData';
 import { formatDate, peso, getISODateString } from '../utils/utility';
 import todaySales from '../../SaleComputation/sales';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ||
-    (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-        ? 'http://localhost:5000/api'
-        : 'https://receiptionis-management-system-kydk.vercel.app/api');
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 export default function SalesRecord() {
     const isMobile = useMediaQuery('(max-width: 768px)');

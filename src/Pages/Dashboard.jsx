@@ -10,7 +10,7 @@ import useRecordServices from '../../services/recordServices';
 import saleStats from '../../SaleComputation/sales';
 
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 export default function Dashboard() {
     const [now, setNow] = useState(new Date());
