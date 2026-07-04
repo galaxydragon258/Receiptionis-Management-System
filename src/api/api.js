@@ -1,13 +1,14 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 
+
 const getDailyData = async () => {
     try {
 
 
         const [recordRes, monhtlyRes] = await Promise.all([
-            fetch(`${API_BASE_URL}/api/records`),
-            fetch(`${API_BASE_URL}/api/monthly-data`)
+            fetch(`https://receiptionis-management-system-kydk.vercel.app/api/records`),
+            fetch(`https://receiptionis-management-system-kydk.vercel.app/api/monthly-data`)
         ])
         if (!recordRes.ok) {
             throw new Error(`HTTP error! status: ${recordRes.status}`);
