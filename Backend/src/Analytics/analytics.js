@@ -1,4 +1,4 @@
-const { ReyesGymRecords } = require("../model/recordSchema.model");
+const { ReyesGymRecords } = require("../model/recordSchema.model.js");
 
 const getMonthlyData = async (req, res) => {
     try {

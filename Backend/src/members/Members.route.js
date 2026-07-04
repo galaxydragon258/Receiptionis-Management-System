@@ -1,5 +1,5 @@
-const { ReyesGymRecords } = require('../model/recordSchema.model');
-const { formatDate, formatTime } = require('../utils/utility');
+const { ReyesGymRecords } = require('../model/recordSchema.model.js');
+const { formatDate, formatTime } = require('../utils/utility.js');
 
 const addMember = async (req, res) => {
     const { member, type, paymentMethod, amount, time, orNumber, date, createdBy } = req.body;
