@@ -1,4 +1,4 @@
-import getDailyData from '../api/api.js';
+import getDailyData from '../src/api/api.js';
 import { useQuery } from '@tanstack/react-query';
 
 
