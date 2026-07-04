@@ -77,9 +77,32 @@ export default function SalesRecord() {
 
             // Payment Method Filter
             if (paymentMethod !== 'All') {
-                const methodStr = (r.paymentMethod || 'Cash').toLowerCase().replace(/[^a-z0-9]/g, '');
+                const methodStr = (r.paymentMethod || 'Cash').toLowerCase();
                 const targetMethod = paymentMethod.toLowerCase().replace(/[^a-z0-9]/g, '');
-                if (!methodStr.includes(targetMethod)) return false;
+                
+                // Split by '&' to support hybrid payment methods
+                const parts = methodStr.split('&').map(p => p.trim());
+                const hasMatch = parts.some(part => {
+                    let normalizedPart = '';
+                    const match = part.match(/^([a-z\s\-]+)/);
+                    if (match) {
+                        normalizedPart = match[1].trim().replace(/[^a-z0-9]/g, '');
+                    } else {
+                        normalizedPart = part.replace(/[^a-z0-9]/g, '');
+                    }
+
+                    if (targetMethod === 'cash') {
+                        return normalizedPart.includes('cash') && !normalizedPart.includes('gcash');
+                    } else if (targetMethod === 'gcash') {
+                        return normalizedPart.includes('gcash');
+                    } else if (targetMethod === 'bpi') {
+                        return normalizedPart.includes('bpi') || normalizedPart.includes('bank');
+                    } else {
+                        return normalizedPart.includes(targetMethod);
+                    }
+                });
+
+                if (!hasMatch) return false;
             }
 
             // Receptionist Filter
@@ -146,11 +169,11 @@ export default function SalesRecord() {
         filteredRecords.forEach(r => {
             const methodStr = r.paymentMethod || 'Cash';
             const amount = Number(r.amount) || 0;
-            
+
             // Check if it's a hybrid payment method
             const parts = methodStr.split('&').map(p => p.trim());
             let matched = false;
-            
+
             parts.forEach(part => {
                 const match = part.match(/^([a-zA-Z\s\-]+)(?:\s*\([₱\d\.\,\s]+\))?/);
                 if (match) {
@@ -158,7 +181,7 @@ export default function SalesRecord() {
                     const normalized = method.toLowerCase().replace(/[^a-z0-9]/g, '');
                     const amtMatch = part.match(/\([₱\s]*([\d\.\,]+)\)/);
                     const amt = amtMatch ? parseFloat(amtMatch[1].replace(/,/g, '')) : amount / parts.length;
-                    
+
                     if (normalized.includes('cash') && !normalized.includes('gcash')) {
                         cashAmt += amt;
                         cashCount++;
@@ -174,7 +197,7 @@ export default function SalesRecord() {
                     }
                 }
             });
-            
+
             if (!matched) {
                 // Fallback for legacy entries
                 const normalizedStr = methodStr.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -1291,12 +1314,12 @@ export default function SalesRecord() {
                                             <td style={{ padding: '12px 14px' }}>
                                                 <span style={{
                                                     display: 'inline-block', padding: '3px 8px', borderRadius: 6, fontSize: '0.7rem', fontWeight: 600,
-                                                    background: 
-                                                        r.paymentMethod?.includes('Cash') && !r.paymentMethod?.includes('&') ? '#ecfdf5' : 
-                                                        r.paymentMethod?.includes('GCash') && !r.paymentMethod?.includes('&') ? '#eff6ff' : '#fef3c7',
-                                                    color: 
-                                                        r.paymentMethod?.includes('Cash') && !r.paymentMethod?.includes('&') ? '#10b981' : 
-                                                        r.paymentMethod?.includes('GCash') && !r.paymentMethod?.includes('&') ? '#2563eb' : '#d97706'
+                                                    background:
+                                                        r.paymentMethod?.includes('Cash') && !r.paymentMethod?.includes('&') ? '#ecfdf5' :
+                                                            r.paymentMethod?.includes('GCash') && !r.paymentMethod?.includes('&') ? '#eff6ff' : '#fef3c7',
+                                                    color:
+                                                        r.paymentMethod?.includes('Cash') && !r.paymentMethod?.includes('&') ? '#10b981' :
+                                                            r.paymentMethod?.includes('GCash') && !r.paymentMethod?.includes('&') ? '#2563eb' : '#d97706'
                                                 }}>
                                                     {r.paymentMethod || 'Cash'}
                                                 </span>
@@ -1361,12 +1384,12 @@ export default function SalesRecord() {
                                             </span>
                                             <span style={{
                                                 display: 'inline-block', padding: '2px 6px', borderRadius: 4, fontSize: '0.62rem', fontWeight: 600,
-                                                background: 
-                                                    r.paymentMethod?.includes('Cash') && !r.paymentMethod?.includes('&') ? '#ecfdf5' : 
-                                                    r.paymentMethod?.includes('GCash') && !r.paymentMethod?.includes('&') ? '#eff6ff' : '#fef3c7',
-                                                color: 
-                                                    r.paymentMethod?.includes('Cash') && !r.paymentMethod?.includes('&') ? '#10b981' : 
-                                                    r.paymentMethod?.includes('GCash') && !r.paymentMethod?.includes('&') ? '#2563eb' : '#d97706'
+                                                background:
+                                                    r.paymentMethod?.includes('Cash') && !r.paymentMethod?.includes('&') ? '#ecfdf5' :
+                                                        r.paymentMethod?.includes('GCash') && !r.paymentMethod?.includes('&') ? '#eff6ff' : '#fef3c7',
+                                                color:
+                                                    r.paymentMethod?.includes('Cash') && !r.paymentMethod?.includes('&') ? '#10b981' :
+                                                        r.paymentMethod?.includes('GCash') && !r.paymentMethod?.includes('&') ? '#2563eb' : '#d97706'
                                             }}>
                                                 {r.paymentMethod || 'Cash'}
                                             </span>

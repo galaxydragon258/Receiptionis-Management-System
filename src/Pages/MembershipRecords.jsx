@@ -1,15 +1,19 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
+import { useQueryClient, useMutation } from '@tanstack/react-query';
 import Navbar from '../components/Navbar';
 import AddRecordModal from '../components/AddRecordModal';
 import useMediaQuery from '../hooks/useMediaQuery';
 import { formatDate, peso } from '../utils/utility';
+import useRecordServices from '../../services/recordServices';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 export default function MembershipRecords() {
-    const [records, setRecords] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const queryClient = useQueryClient();
+    const { data, isLoading: loading, error: queryError, refetch } = useRecordServices();
+
+    const records = useMemo(() => data?.recordData || [], [data]);
+    const error = queryError ? (queryError.message || 'Unable to load database records. Please verify that your Backend server is running.') : null;
 
     const [searchQuery, setSearchQuery] = useState('');
     const [activeTab, setActiveTab] = useState('All'); // 'All', 'Active', 'Expiring Soon', 'Expired', 'New'
@@ -25,32 +29,9 @@ export default function MembershipRecords() {
     const isMobile = useMediaQuery('(max-width: 480px)');
     const isTablet = useMediaQuery('(max-width: 768px)');
 
-    // Fetch records
-    const fetchRecords = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const res = await fetch(`${API_BASE_URL}/records`);
-            if (!res.ok) {
-                throw new Error('Failed to fetch records from database');
-            }
-            const data = await res.json();
-            setRecords(data);
-            setLoading(false);
-        } catch (err) {
-            console.error('Error fetching records:', err);
-            setError('Unable to load database records. Please verify that your Backend server is running.');
-            setLoading(false);
-        }
-    }, []);
-
-    useEffect(() => {
-        fetchRecords();
-    }, [fetchRecords]);
-
     // Handle adding a record (e.g. renewal)
-    const handleAddRecord = useCallback(async (record) => {
-        try {
+    const addRecordMutation = useMutation({
+        mutationFn: async (record) => {
             const res = await fetch(`${API_BASE_URL}/records`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -60,13 +41,21 @@ export default function MembershipRecords() {
                 const errorData = await res.json();
                 throw new Error(errorData.error || 'Failed to save record');
             }
-            // Refetch to get updated list
-            fetchRecords();
-        } catch (err) {
+            return res.json();
+        },
+        onSuccess: () => {
+            // Invalidate query to refresh data (including daily records and dashboard) from backend
+            queryClient.invalidateQueries({ queryKey: ['daily-records'] });
+        },
+        onError: (err) => {
             console.error('Error saving record:', err);
             alert(`Error renewing: ${err.message}`);
         }
-    }, [fetchRecords]);
+    });
+
+    const handleAddRecord = useCallback(async (record) => {
+        addRecordMutation.mutate(record);
+    }, [addRecordMutation]);
 
     // Helper to parse dates robustly
     const parseRecordDate = (r) => {
@@ -158,7 +147,7 @@ export default function MembershipRecords() {
                 const diffTime = expiryReset - todayReset;
                 const remainingDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-                // A walkin is active only on the check-in day itself
+                // A walkin is active only on the check-in day itself hhee
                 const status = remainingDays >= 0 ? 'Active' : 'Expired';
 
                 resultList.push({
@@ -241,74 +230,6 @@ export default function MembershipRecords() {
             <Navbar />
 
             <main style={{ maxWidth: 1280, margin: '0 auto', padding: isMobile ? '12px 10px 40px' : isTablet ? '16px 12px 48px' : '24px 16px 60px' }}>
-
-                {/* ─── Error Alert Banner ─── */}
-                {error && (
-                    <div style={{
-                        background: '#fef2f2',
-                        border: '1.5px solid #fca5a5',
-                        borderRadius: 12,
-                        padding: '16px 20px',
-                        marginBottom: 20,
-                        display: 'flex',
-                        gap: 12,
-                        alignItems: 'flex-start',
-                    }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2.5" strokeLinecap="round">
-                                <circle cx="12" cy="12" r="10" />
-                                <line x1="12" y1="8" x2="12" y2="12" />
-                                <line x1="12" y1="16" x2="12.01" y2="16" />
-                            </svg>
-                            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#991b1b' }}>{error}</span>
-                        </div>
-                        <button
-                            onClick={fetchRecords}
-                            style={{
-                                padding: '6px 14px',
-                                background: '#dc2626',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: 8,
-                                fontSize: '0.78rem',
-                                fontWeight: 700,
-                                cursor: 'pointer',
-                                transition: 'all 0.2s',
-                            }}
-                        >
-                            Retry
-                        </button>
-                    </div>
-                )}
-
-                {/* ─── Loading Banner ─── */}
-                {loading && (
-                    <div style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        padding: '50px 20px',
-                        background: 'white',
-                        borderRadius: 16,
-                        border: '1px solid #f1f5f9',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-                        marginBottom: 20,
-                        gap: 14,
-                    }}>
-                        <div style={{
-                            width: 28,
-                            height: 28,
-                            border: '3.5px solid #eef2ff',
-                            borderTop: '3.5px solid #6366f1',
-                            borderRadius: '50%',
-                            animation: 'spin 1s linear infinite',
-                        }} />
-                        <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#64748b' }}>
-                            Computing memberships database...
-                        </span>
-                    </div>
-                )}
 
                 {/* ─── Header ─── */}
                 <div style={{
