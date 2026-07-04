@@ -7,8 +7,8 @@ const getDailyData = async () => {
 
 
         const [recordRes, monhtlyRes] = await Promise.all([
-            fetch(`https://receiptionis-management-system-kydk.vercel.app/api/records`),
-            fetch(`https://receiptionis-management-system-kydk.vercel.app/api/monthly-data`)
+            fetch(`${API_BASE_URL}/api/records`),
+            fetch(`${API_BASE_URL}/api/monthly-data`)
         ])
         if (!recordRes.ok) {
             throw new Error(`HTTP error! status: ${recordRes.status}`);
