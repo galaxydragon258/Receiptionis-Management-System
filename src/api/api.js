@@ -7,8 +7,8 @@ const getDailyData = async () => {
 
 
         const [recordRes, monhtlyRes] = await Promise.all([
-            fetch(`${API_BASE_URL}/api/records`),
-            fetch(`${API_BASE_URL}/api/monthly-data`)
+            fetch(`${API_BASE_URL}/records`),
+            fetch(`${API_BASE_URL}/monthly-data`)
         ])
         if (!recordRes.ok) {
             throw new Error(`HTTP error! status: ${recordRes.status}`);
