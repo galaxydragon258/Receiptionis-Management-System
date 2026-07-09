@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const MONGODB_URI = process.env.MONGODB_URI || '';
 const isPlaceholderUri = MONGODB_URI ? (MONGODB_URI.includes('<username>') || MONGODB_URI.includes('<password>')) : true;
+console.log(isPlaceholderUri)
 
 let cachedConnection = null;
 

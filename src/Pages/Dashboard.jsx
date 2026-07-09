@@ -56,7 +56,7 @@ export default function Dashboard() {
             console.log(responseData)
             const savedRecordObj = responseData.data || responseData;
             setDailyRecords(prev => [...prev, savedRecordObj]);
-            
+
             // Invalidate query to refresh data (including monthly sales breakdown) from backend
             queryClient.invalidateQueries({ queryKey: ['daily-records'] });
         } catch (err) {
@@ -80,11 +80,7 @@ export default function Dashboard() {
     const recordData = data?.recordData || [];
 
     // Sync React Query's recordData into local dailyRecords state
-    useEffect(() => {
-        if (recordData) {
-            setDailyRecords(recordData);
-        }
-    }, [recordData]);
+
 
     // calculate totals based on today's filtered records
     const walkInCount = useMemo(() => todayRecords.filter(r => r.type === 'Walk-in').length, [todayRecords]);

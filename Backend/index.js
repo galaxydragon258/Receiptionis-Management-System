@@ -17,12 +17,12 @@ const { connectToDatabase } = require('./src/config/db.js');
 const { getMonthlyData } = require('./src/Analytics/analytics.js')
 const { addMember } = require('./src/members/members.route.js')
 
-
 connectToDatabase()
 
 app.use(async (req, res, next) => {
     try {
         await connectToDatabase();
+        console.log('done connecting')
         next();
     } catch (err) {
         console.error('Database connection middleware:', err);
