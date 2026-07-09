@@ -11,6 +11,7 @@ const recordSchema = new mongoose.Schema({
     amount: { type: Number, required: true },
     orNumber: { type: String, default: '' },
     date: { type: String, default: '' },
+    recordDate: { type: Date },
     createdBy: { type: String, default: 'admin' },
     expiresAt: { type: Date },
 }, {
@@ -24,9 +25,17 @@ recordSchema.virtual('id').get(function () {
     return this._id ? this._id.toString() : '';
 });
 
-// Pre-save hook to calculate dynamic expiresAt based on duration
+// Pre-save hook to calculate dynamic expiresAt and recordDate based on duration & record date
 recordSchema.pre('save', function () {
-    const baseDate = this.createdAt || new Date();
+    let baseDate = this.createdAt || new Date();
+    if (this.date) {
+        const parsedDate = new Date(this.date);
+        if (!isNaN(parsedDate.getTime())) {
+            baseDate = parsedDate;
+        }
+    }
+    this.recordDate = baseDate;
+
     const expires = new Date(baseDate);
     const durationStr = this.duration || '';
     

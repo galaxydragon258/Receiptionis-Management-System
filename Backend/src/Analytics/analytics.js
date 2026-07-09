@@ -2,11 +2,31 @@ const { ReyesGymRecords } = require("../model/recordSchema.model.js");
 
 const getMonthlyData = async (req, res) => {
     try {
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
+
+        const endOfMonth = new Date(startOfMonth);
+        endOfMonth.setMonth(endOfMonth.getMonth() + 1);
+
         const data = await ReyesGymRecords.aggregate([
+            {
+                $match: {
+                    $or: [
+                        { recordDate: { $gte: startOfMonth, $lt: endOfMonth } },
+                        {
+                            recordDate: { $exists: false },
+                            createdAt: { $gte: startOfMonth, $lt: endOfMonth }
+                        }
+                    ]
+                }
+            },
             {
                 $group: {
                     _id: {
-                        day: { $dayOfMonth: "$createdAt" }
+                        day: {
+                            $dayOfMonth: { $ifNull: [ "$recordDate", "$createdAt" ] }
+                        }
                     },
                     sales: { $sum: "$amount" },
                     members: { $sum: 1 }

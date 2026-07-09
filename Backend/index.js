@@ -17,7 +17,7 @@ const { connectToDatabase } = require('./src/config/db.js');
 const { getMonthlyData } = require('./src/Analytics/analytics.js')
 const { addMember } = require('./src/members/members.route.js')
 
-connectToDatabase()
+connectToDatabase().catch(err => console.error('Initial DB connection failure:', err));
 
 app.use(async (req, res, next) => {
     try {
