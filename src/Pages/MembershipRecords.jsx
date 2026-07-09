@@ -59,8 +59,8 @@ export default function MembershipRecords() {
 
     // Helper to parse dates robustly
     const parseRecordDate = (r) => {
-        if (r.createdAt) return new Date(r.createdAt);
         if (r.date) return new Date(r.date);
+        if (r.createdAt) return new Date(r.createdAt);
         return new Date();
     };
 

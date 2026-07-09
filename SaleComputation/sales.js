@@ -14,7 +14,7 @@ export default function saleStats() {
 
     const todaySales = record
         .filter(r => {
-            const rDate = r?.createdAt ? new Date(r.createdAt) : new Date(r?.date || new Date());
+            const rDate = r?.date ? new Date(r.date) : (r?.createdAt ? new Date(r.createdAt) : new Date());
             return getISODateString(rDate) === todayStr;
         })
         .reduce((sum, r) => sum + (r?.amount || 0), 0);
