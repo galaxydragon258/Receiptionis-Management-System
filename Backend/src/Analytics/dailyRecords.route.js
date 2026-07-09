@@ -6,7 +6,7 @@ const getDailyData = async (req, res) => {
         console.log("DATA", data)
     } catch (err) {
         console.error("Failed to get daily data", err);
-        res.status(500).json({ error: "Failed to get daily data" })
+        res.status(500).json({ error: "Failed to get daily data: " + err.message, stack: err.stack })
     }
 
 }

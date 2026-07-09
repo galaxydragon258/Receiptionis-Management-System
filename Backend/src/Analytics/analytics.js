@@ -28,7 +28,7 @@ const getMonthlyData = async (req, res) => {
         res.json(data);
     } catch (err) {
         console.error('Error calculating monthly stats:', err);
-        res.status(500).json({ error: 'Failed to calculate monthly stats' });
+        res.status(500).json({ error: 'Failed to calculate monthly stats: ' + err.message, stack: err.stack });
     }
 };
 

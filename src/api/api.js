@@ -9,6 +9,7 @@ const getDailyData = async () => {
             fetch(`${API_BASE_URL}/records`),
             fetch(`${API_BASE_URL}/monthly-data`)
         ])
+
         if (!recordRes.ok) {
             throw new Error(`HTTP error! status: ${recordRes.status}`);
         }
@@ -20,6 +21,7 @@ const getDailyData = async () => {
 
         console.log('recordData', recordData)
         console.log('monthlyData', monthlyData)
+        console.log('testing')
 
         return {
             recordData: Array.isArray(recordData) ? recordData : [],
