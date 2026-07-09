@@ -9,9 +9,9 @@ import { formatDate, formatTime, peso } from '../utils/utility';
 import StatCard from '../components/StatCard';
 import useRecordServices from '../../services/recordServices';
 import saleStats from '../../SaleComputation/sales';
+import { API_BASE_URL } from '../api/api';
 
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 export default function Dashboard() {
     const queryClient = useQueryClient();
@@ -56,7 +56,7 @@ export default function Dashboard() {
             console.log(responseData)
             const savedRecordObj = responseData.data || responseData;
             setDailyRecords(prev => [...prev, savedRecordObj]);
-            
+
             // Invalidate query to refresh data (including monthly sales breakdown) from backend
             queryClient.invalidateQueries({ queryKey: ['daily-records'] });
         } catch (err) {

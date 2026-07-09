@@ -4,34 +4,30 @@ import useMediaQuery from '../hooks/useMediaQuery';
 import { MONTHS } from '../assets/Data/DatesData';
 import { formatDate, peso, getISODateString } from '../utils/utility';
 import todaySales from '../../SaleComputation/sales';
+import { API_BASE_URL } from '../api/api.js';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 export default function SalesRecord() {
     const isMobile = useMediaQuery('(max-width: 768px)');
     const isSmallMobile = useMediaQuery('(max-width: 480px)');
 
-    // Backend records & state
     const [records, setRecords] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // Filters State
+
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('All');
     const [type, setType] = useState('All');
     const [searchQuery, setSearchQuery] = useState('');
 
-    // Pagination State
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
 
-    // Sorting State
     const [sortField, setSortField] = useState('createdAt');
     const [sortOrder, setSortOrder] = useState('desc');
 
-    // Chart Interaction State
     const [hoveredPoint, setHoveredPoint] = useState(null);
 
 
@@ -79,7 +75,7 @@ export default function SalesRecord() {
             if (paymentMethod !== 'All') {
                 const methodStr = (r.paymentMethod || 'Cash').toLowerCase();
                 const targetMethod = paymentMethod.toLowerCase().replace(/[^a-z0-9]/g, '');
-                
+
                 // Split by '&' to support hybrid payment methods
                 const parts = methodStr.split('&').map(p => p.trim());
                 const hasMatch = parts.some(part => {

@@ -5,8 +5,8 @@ import AddRecordModal from '../components/AddRecordModal';
 import useMediaQuery from '../hooks/useMediaQuery';
 import { formatDate, peso } from '../utils/utility';
 import useRecordServices from '../../services/recordServices';
+import { API_BASE_URL } from '../api/api';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 export default function MembershipRecords() {
     const queryClient = useQueryClient();
