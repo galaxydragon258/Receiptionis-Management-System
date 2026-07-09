@@ -624,7 +624,7 @@ export default function Dashboard() {
                         {/* Quick Stats */}
                         <div
                             style={{
-                                background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                                background: '#3b9929ff',
                                 borderRadius: isSmallMobile ? 12 : 16,
                                 padding: isSmallMobile ? 18 : isMobile ? 22 : 28,
                                 color: 'white',
@@ -636,15 +636,6 @@ export default function Dashboard() {
                                 overflow: 'hidden',
                             }}
                         >
-                            {/* Decorative circles */}
-                            <div style={{
-                                position: 'absolute', top: -30, right: -30, width: 100, height: 100,
-                                borderRadius: '50%', background: 'rgba(255,255,255,0.08)',
-                            }} />
-                            <div style={{
-                                position: 'absolute', bottom: -20, left: -20, width: 70, height: 70,
-                                borderRadius: '50%', background: 'rgba(255,255,255,0.06)',
-                            }} />
 
                             <p style={{ fontSize: '0.78rem', fontWeight: 500, opacity: 0.8, marginBottom: 8, position: 'relative' }}>
                                 💰 Today's Revenue Highlight

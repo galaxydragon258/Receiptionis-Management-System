@@ -18,11 +18,6 @@ const getDailyData = async () => {
         }
         const recordData = await recordRes.json();
         const monthlyData = await monhtlyRes.json();
-
-        console.log('recordData', recordData)
-        console.log('monthlyData', monthlyData)
-        console.log('testing')
-
         return {
             recordData: Array.isArray(recordData) ? recordData : [],
             monthlyData: Array.isArray(monthlyData) ? monthlyData : []
